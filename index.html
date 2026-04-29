@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CamarageBand — 36 Keys + Hand Conductor + Drum Machine</title>
+<title>CameraBand — 36 Keys + Hand Conductor + Drum Machine</title>
 <style>
   :root{
     --bg0:#0f1029; --bg1:#1a1040; --bg2:#1e1145; --bg3:#12203a;
@@ -39,6 +39,12 @@
   .ctrl input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--pink);cursor:pointer;border:0;box-shadow:0 0 10px rgba(244,114,182,.6)}
   .ctrl.locked{opacity:.45;pointer-events:none}
   .ctrl .num{font-size:13px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;min-width:30px;text-align:center}
+
+  /* language toggle */
+  .lang-toggle{display:inline-flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:9px;overflow:hidden}
+  .lang-btn{cursor:pointer;background:transparent;border:0;color:var(--ink-dim);padding:5px 11px;font-size:11px;font-weight:700;transition:all .15s ease;font-family:inherit}
+  .lang-btn:hover{color:var(--ink)}
+  .lang-btn.active{background:linear-gradient(135deg,rgba(244,114,182,.35),rgba(167,139,250,.35));color:var(--ink)}
 
   /* ---------- camera fills middle row ---------- */
   .stage{position:relative;background:#000;overflow:hidden}
@@ -161,11 +167,11 @@
 <div class="app">
 
   <div class="top">
-    <div class="title">CamarageBand</div>
-    <div class="sub">摄像头指挥 · 鼓机 · 4小节 Loop</div>
+    <div class="title">CameraBand</div>
+    <div class="sub" data-i18n="sub">摄像头指挥 · 鼓机 · 4小节 Loop</div>
 
     <div class="ctrl" id="voiceCtrl">
-      <label>音色</label>
+      <label data-i18n="voiceLabel">音色</label>
       <select id="voiceSelect">
         <option value="piano">Piano</option>
         <option value="epiano">E-Piano</option>
@@ -182,26 +188,30 @@
     </div>
 
     <div class="ctrl" id="countinCtrl">
-      <label>预备</label>
+      <label data-i18n="countinLabel">预备</label>
       <select id="countinSelect">
-        <option value="1">1 小节</option>
-        <option value="2" selected>2 小节</option>
-        <option value="4">4 小节</option>
+        <option value="1" data-i18n="bar1">1 小节</option>
+        <option value="2" selected data-i18n="bar2">2 小节</option>
+        <option value="4" data-i18n="bar4">4 小节</option>
       </select>
     </div>
 
     <div class="ctrl" id="loopbarsCtrl">
       <label>Loop</label>
       <select id="loopbarsSelect">
-        <option value="4" selected>4 小节</option>
-        <option value="8">8 小节</option>
+        <option value="4" selected data-i18n="bar4b">4 小节</option>
+        <option value="8" data-i18n="bar8b">8 小节</option>
       </select>
     </div>
 
     <span style="flex:1"></span>
-    <span id="midiPill" class="pill"><span class="dot"></span><span id="midiTxt">检测 MIDI…</span></span>
-    <span id="camPill" class="pill"><span class="dot"></span><span id="camTxt">摄像头未启动</span></span>
-    <button id="startBtn" class="btn primary">▶ 启动音频与摄像头</button>
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="zh">中</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
+    <span id="midiPill" class="pill"><span class="dot"></span><span id="midiTxt" data-i18n="midiChecking">检测 MIDI…</span></span>
+    <span id="camPill" class="pill"><span class="dot"></span><span id="camTxt" data-i18n="camIdle">摄像头未启动</span></span>
+    <button id="startBtn" class="btn primary" data-i18n="startBtn">▶ 启动音频与摄像头</button>
   </div>
 
   <div class="stage" id="stage">
@@ -228,11 +238,11 @@
 
     <!-- FX HUD -->
     <div class="hud hud-fx">
-      <div class="cell" data-fx="reverb"><div class="label">Reverb / Echo</div><div class="val" id="reverbVal">0%</div><div class="meter"><i id="reverbBar"></i></div></div>
-      <div class="cell" data-fx="pad"><div class="label">String Pad</div><div class="val" id="padVal">0%</div><div class="meter"><i id="padBar"></i></div></div>
-      <div class="cell" data-fx="filter"><div class="label">Lowpass + Fade</div><div class="val" id="filterVal">20k</div><div class="meter"><i id="filterBar"></i></div></div>
+      <div class="cell" data-fx="reverb"><div class="label" data-i18n="fxReverb">Reverb / Echo</div><div class="val" id="reverbVal">0%</div><div class="meter"><i id="reverbBar"></i></div></div>
+      <div class="cell" data-fx="pad"><div class="label" data-i18n="fxPad">String Pad</div><div class="val" id="padVal">0%</div><div class="meter"><i id="padBar"></i></div></div>
+      <div class="cell" data-fx="filter"><div class="label" data-i18n="fxFilter">Lowpass + Fade</div><div class="val" id="filterVal">20k</div><div class="meter"><i id="filterBar"></i></div></div>
       <div class="cell strings-cell" data-fx="strings">
-        <div class="label">← Violin · Cello →</div>
+        <div class="label" data-i18n="fxStrings">← Violin · Cello →</div>
         <div class="strings-row">
           <div class="strings-col">
             <span class="num" id="violinVal">0%</span>
@@ -248,35 +258,35 @@
 
     <!-- gesture HUD -->
     <div class="hud hud-gesture">
-      <div class="label">手势</div>
+      <div class="label" data-i18n="gestureLabel">手势</div>
       <div class="big" id="gestureBig">—</div>
-      <div class="name" id="gestureName">没看到手</div>
+      <div class="name" id="gestureName" data-i18n="gestureNone">没看到手</div>
     </div>
 
     <!-- cheat sheet -->
     <div class="hud hud-cheat">
-      <h4>手势 Cheat Sheet</h4>
-      <div class="row"><span>🖐️ 五指张开</span><b>Reverb / Echo</b></div>
-      <div class="row"><span>⬆️ 抬手向上</span><b>弦乐 Pad</b></div>
-      <div class="row"><span>✊ 握拳</span><b>低通 + 渐弱消音</b></div>
-      <div class="row"><span>➡️ 手往右</span><b>+ 大提琴 (Cello)</b></div>
-      <div class="row"><span>⬅️ 手往左</span><b>+ 小提琴 (Violin)</b></div>
-      <div class="row" style="border-top:1px solid rgba(255,255,255,.12);padding-top:5px;margin-top:3px"><span>☝️ 1 指</span><b>Drum 开</b></div>
-      <div class="row"><span>✌️ 2 指</span><b>Drum 关</b></div>
-      <div class="row"><span>🤟 3 指</span><b>录 / 叠加下一轨</b></div>
-      <div class="row"><span>🤙 单手"6"</span><b>急停 (拇指+小指, 按住 1s)</b></div>
+      <h4 data-i18n="cheatTitle">手势 Cheat Sheet</h4>
+      <div class="row"><span data-i18n="cheatOpen">🖐️ 五指张开</span><b data-i18n="cheatOpenEffect">Reverb / Echo</b></div>
+      <div class="row"><span data-i18n="cheatRaise">⬆️ 抬手向上</span><b data-i18n="cheatRaiseEffect">弦乐 Pad</b></div>
+      <div class="row"><span data-i18n="cheatFist">✊ 握拳</span><b data-i18n="cheatFistEffect">低通 + 渐弱消音</b></div>
+      <div class="row"><span data-i18n="cheatRight">➡️ 手往右</span><b data-i18n="cheatRightEffect">+ 大提琴 (Cello)</b></div>
+      <div class="row"><span data-i18n="cheatLeft">⬅️ 手往左</span><b data-i18n="cheatLeftEffect">+ 小提琴 (Violin)</b></div>
+      <div class="row" style="border-top:1px solid rgba(255,255,255,.12);padding-top:5px;margin-top:3px"><span data-i18n="cheat1">☝️ 1 指</span><b data-i18n="cheat1Effect">Drum 开</b></div>
+      <div class="row"><span data-i18n="cheat2">✌️ 2 指</span><b data-i18n="cheat2Effect">Drum 关</b></div>
+      <div class="row"><span data-i18n="cheat3">🤟 3 指</span><b data-i18n="cheat3Effect">录 / 叠加下一轨</b></div>
+      <div class="row"><span data-i18n="cheat6">🤙 单手"6"</span><b data-i18n="cheat6Effect">急停 (拇指+小指, 按住 1s)</b></div>
     </div>
 
     <div class="cover" id="camCover">
-      <div class="big">📷 摄像头未启动</div>
-      <div>点击右上角"启动"按钮，将一只手伸到摄像头前作指挥</div>
-      <div style="font-size:11px;opacity:.7">建议: 右手弹琴 · 左手指挥</div>
+      <div class="big" data-i18n="coverTitle">📷 摄像头未启动</div>
+      <div data-i18n="coverHint">点击右上角"启动"按钮，将一只手伸到摄像头前作指挥</div>
+      <div style="font-size:11px;opacity:.7" data-i18n="coverHint2">建议: 右手弹琴 · 左手指挥</div>
     </div>
   </div>
 
   <div class="kb-wrap">
     <div class="kb-info">
-      <span>36 键 · C3 → B5 · MIDI 48–83 · 鼠标点击 · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… 三排 = 白键</span>
+      <span data-i18n="kbInfo">36 键 · C3 → B5 · MIDI 48–83 · 鼠标点击 · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… 三排 = 白键</span>
       <span id="lastNoteTxt">—</span>
     </div>
     <div class="keyboard" id="keyboard"></div>
@@ -288,6 +298,155 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
 <script>
+/* ============================================================
+   I18N — 中英双语
+   ============================================================ */
+const I18N = {
+  zh: {
+    sub: '摄像头指挥 · 鼓机 · 4小节 Loop',
+    voiceLabel: '音色', countinLabel: '预备',
+    bar1:'1 小节', bar2:'2 小节', bar4:'4 小节',
+    bar4b:'4 小节', bar8b:'8 小节',
+    midiChecking:'检测 MIDI…', camIdle:'摄像头未启动', camOn:'摄像头已启动', camFailed:'摄像头启动失败',
+    midiNoDevice:'没检测到 MIDI 设备', midiDenied:'MIDI 权限被拒绝', midiUnsupported:'浏览器不支持 Web MIDI',
+    mediapipeFailed:'MediaPipe 加载失败',
+    midiPK:n=>'PartyKeys · '+n, midiAny:n=>'MIDI · '+n,
+    startBtn:'▶ 启动音频与摄像头', startBtnDone:'✓ 已启动',
+    fxReverb:'Reverb / Echo', fxPad:'String Pad', fxFilter:'Lowpass + Fade', fxStrings:'← Violin · Cello →',
+    gestureLabel:'手势', gestureNone:'没看到手',
+    cheatTitle:'手势 Cheat Sheet',
+    cheatOpen:'🖐️ 五指张开', cheatOpenEffect:'Reverb / Echo',
+    cheatRaise:'⬆️ 抬手向上', cheatRaiseEffect:'弦乐 Pad',
+    cheatFist:'✊ 握拳', cheatFistEffect:'低通 + 渐弱消音',
+    cheatRight:'➡️ 手往右', cheatRightEffect:'+ 大提琴 (Cello)',
+    cheatLeft:'⬅️ 手往左', cheatLeftEffect:'+ 小提琴 (Violin)',
+    cheat1:'☝️ 1 指', cheat1Effect:'Drum 开',
+    cheat2:'✌️ 2 指', cheat2Effect:'Drum 关',
+    cheat3:'🤟 3 指', cheat3Effect:'录 / 叠加下一轨',
+    cheat6:'🤙 单手"6"', cheat6Effect:'急停 (拇指+小指, 按住 1s)',
+    coverTitle:'📷 摄像头未启动', coverHint:'点击右上角"启动"按钮，将一只手伸到摄像头前作指挥', coverHint2:'建议: 右手弹琴 · 左手指挥',
+    kbInfo:'36 键 · C3 → B5 · MIDI 48–83 · 鼠标点击 · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… 三排 = 白键',
+    // dynamic (drum master)
+    dmOff:'— OFF —',
+    dmOffName:'DRUM / LOOP',
+    dmOffHint:lb=>`比 1 启动鼓机 · 比 3 录 ${lb} 小节 Loop`,
+    dmDrumName:'DRUM',
+    dmDrumVal:bpm=>`● ON  ·  ${bpm} BPM`,
+    dmDrumHint:(lb,cb)=>`比 3 录 ${lb} 小节 Loop (含 ${cb} 小节预备拍) · 比 2 关鼓机`,
+    dmCountinName:'COUNT-IN',
+    dmCountinVal:(c,t)=>`▷ 预备 ${c} / ${t}`,
+    dmCountinHint:(r,ti)=>`准备弹琴 — ${r} 小节后开始录制${ti}`,
+    dmWaitName:'WAITING', dmWaitNameCycle:'WAITING CYCLE',
+    dmWaitVal:'◐ 等小节结束', dmWaitValCycle:'◐ 等下个 Loop 起点',
+    dmWaitHint:(cb,lb,ti)=>`即将开始 ${cb} 小节预备拍 (loop ${lb} 小节${ti})`,
+    dmRecName:t=>`RECORDING T${t}`,
+    dmRecVal:(c,t)=>`● 录制 ${c} / ${t}`,
+    dmRecHint:(r,ti)=>`弹琴！剩 ${r} 小节 — 双手"6"急停${ti}`,
+    dmLoopName:'LOOP',
+    dmLoopValPlaying:(c,m)=>`▶ PLAYING · ${c}/${m} 轨`,
+    dmLoopValStacked:c=>`▶ ${c} 轨叠加`,
+    dmLoopHintAdd:n=>`比 3 叠加第 ${n} 轨 · "6"急停`,
+    dmLoopHintReplace:'比 3 重录第 2 轨 · "6"急停',
+    trackInfo:(c,m)=>` · ${c}/${m} 轨`,
+    // gesture names
+    gShaka:'🤙 比 6 (急停 · 按住 1s)',
+    gFist:'✊ 握拳', gFistFade:p=>`✊ 握拳 (${p}%)`,
+    g1:'☝️ 1 (Drum 开)', g2:'✌️ 2 (Drum 关)', g3:'🤟 3 (录/叠轨)',
+    g4:'4 指 (无触发)',
+    g5Open:'🖐️ 五指张开', g5Raise:'🖐️⬆️ 张开+抬高',
+    gCello:p=>`➡️ 大提琴 ${p}%`, gViolin:p=>`⬅️ 小提琴 ${p}%`,
+    velLabel:'vel'
+  },
+  en: {
+    sub: 'Camera Conductor · Drums · 4-bar Loop',
+    voiceLabel: 'Voice', countinLabel: 'Pre-roll',
+    bar1:'1 bar', bar2:'2 bars', bar4:'4 bars',
+    bar4b:'4 bars', bar8b:'8 bars',
+    midiChecking:'Checking MIDI…', camIdle:'Camera off', camOn:'Camera on', camFailed:'Camera failed',
+    midiNoDevice:'No MIDI device', midiDenied:'MIDI denied', midiUnsupported:'Web MIDI unsupported',
+    mediapipeFailed:'MediaPipe load failed',
+    midiPK:n=>'PartyKeys · '+n, midiAny:n=>'MIDI · '+n,
+    startBtn:'▶ Start Audio + Camera', startBtnDone:'✓ Started',
+    fxReverb:'Reverb / Echo', fxPad:'String Pad', fxFilter:'Lowpass + Fade', fxStrings:'← Violin · Cello →',
+    gestureLabel:'Gesture', gestureNone:'No hand',
+    cheatTitle:'Gesture Cheat Sheet',
+    cheatOpen:'🖐️ Open hand', cheatOpenEffect:'Reverb / Echo',
+    cheatRaise:'⬆️ Raise hand', cheatRaiseEffect:'String Pad',
+    cheatFist:'✊ Fist', cheatFistEffect:'Lowpass + fade out',
+    cheatRight:'➡️ Hand right', cheatRightEffect:'+ Cello',
+    cheatLeft:'⬅️ Hand left', cheatLeftEffect:'+ Violin',
+    cheat1:'☝️ 1 finger', cheat1Effect:'Drums on',
+    cheat2:'✌️ 2 fingers', cheat2Effect:'Drums off',
+    cheat3:'🤟 3 fingers', cheat3Effect:'Record / Overdub',
+    cheat6:'🤙 Shaka "6"', cheat6Effect:'Stop (thumb+pinky, hold 1s)',
+    coverTitle:'📷 Camera off', coverHint:'Click "Start" top-right; hold one hand up to conduct', coverHint2:'Tip: right hand plays · left hand conducts',
+    kbInfo:'36 keys · C3 → B5 · MIDI 48–83 · click · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… rows = white keys',
+    dmOff:'— OFF —',
+    dmOffName:'DRUM / LOOP',
+    dmOffHint:lb=>`1 finger to start drums · 3 fingers to record ${lb}-bar loop`,
+    dmDrumName:'DRUM',
+    dmDrumVal:bpm=>`● ON  ·  ${bpm} BPM`,
+    dmDrumHint:(lb,cb)=>`3 fingers to record ${lb}-bar loop (with ${cb}-bar pre-roll) · 2 fingers to stop`,
+    dmCountinName:'COUNT-IN',
+    dmCountinVal:(c,t)=>`▷ Pre ${c} / ${t}`,
+    dmCountinHint:(r,ti)=>`Get ready — recording in ${r} bars${ti}`,
+    dmWaitName:'WAITING', dmWaitNameCycle:'WAITING CYCLE',
+    dmWaitVal:'◐ Wait for bar', dmWaitValCycle:'◐ Wait for loop start',
+    dmWaitHint:(cb,lb,ti)=>`Starting ${cb}-bar pre-roll (loop ${lb} bars${ti})`,
+    dmRecName:t=>`RECORDING T${t}`,
+    dmRecVal:(c,t)=>`● REC ${c} / ${t}`,
+    dmRecHint:(r,ti)=>`Play! ${r} bars left — shaka "6" to stop${ti}`,
+    dmLoopName:'LOOP',
+    dmLoopValPlaying:(c,m)=>`▶ PLAYING · ${c}/${m} tracks`,
+    dmLoopValStacked:c=>`▶ ${c} tracks layered`,
+    dmLoopHintAdd:n=>`3 fingers to add track ${n} · "6" to stop`,
+    dmLoopHintReplace:'3 fingers to re-record T2 · "6" to stop',
+    trackInfo:(c,m)=>` · ${c}/${m} tracks`,
+    gShaka:'🤙 Shaka 6 (stop · hold 1s)',
+    gFist:'✊ Fist', gFistFade:p=>`✊ Fist (${p}%)`,
+    g1:'☝️ 1 (drums on)', g2:'✌️ 2 (drums off)', g3:'🤟 3 (record/overdub)',
+    g4:'4 fingers (no trigger)',
+    g5Open:'🖐️ Open hand', g5Raise:'🖐️⬆️ Open + raise',
+    gCello:p=>`➡️ Cello ${p}%`, gViolin:p=>`⬅️ Violin ${p}%`,
+    velLabel:'vel'
+  }
+};
+let LANG = (navigator.language||'').toLowerCase().startsWith('en') ? 'en' : 'zh';
+function t(key, ...args){
+  const v = (I18N[LANG] && I18N[LANG][key]) ?? (I18N.zh[key]);
+  if(typeof v === 'function') return v(...args);
+  return v ?? key;
+}
+function applyStaticI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k = el.getAttribute('data-i18n');
+    el.innerHTML = t(k);
+  });
+  document.documentElement.lang = LANG;
+}
+// 动态文本 (status pills 等) 用这个：会记住 key+args，切换语言时自动重渲染
+const _dynI18n = new Set();
+function setI18nText(el, key, ...args){
+  el._i18nKey = key;
+  el._i18nArgs = args;
+  _dynI18n.add(el);
+  el.textContent = t(key, ...args);
+}
+function refreshDynamicI18n(){
+  for(const el of _dynI18n){
+    if(el._i18nKey) el.textContent = t(el._i18nKey, ...(el._i18nArgs||[]));
+  }
+}
+function setLang(lang){
+  if(lang !== 'zh' && lang !== 'en') return;
+  LANG = lang;
+  applyStaticI18n();
+  refreshDynamicI18n();
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+  });
+}
+
 /* ============================================================
    AUDIO ENGINE
    ============================================================ */
@@ -995,22 +1154,22 @@ function updateDrumDisplay(){
   const segBars = LOOP_BARS / 4;
   function barToSeg(bar){ return clamp(Math.floor(bar / segBars), 0, 3); }
 
-  const trackInfo = L.tracks.length > 0 ? ` · ${L.tracks.length}/${MAX_TRACKS} 轨` : '';
+  const trackInfo = L.tracks.length > 0 ? t('trackInfo', L.tracks.length, MAX_TRACKS) : '';
 
   if(L.state === 'pending-countin'){
     root.classList.add('is-countin');
-    dmName.textContent = L.pendingWaitCycle ? 'WAITING CYCLE' : 'WAITING';
-    dmVal.textContent = L.pendingWaitCycle ? '◐ 等下个 Loop 起点' : '◐ 等小节结束';
-    dmHint.textContent = '即将开始 ' + COUNTIN_BARS + ' 小节预备拍 (loop ' + LOOP_BARS + ' 小节' + trackInfo + ')';
+    dmName.textContent = L.pendingWaitCycle ? t('dmWaitNameCycle') : t('dmWaitName');
+    dmVal.textContent = L.pendingWaitCycle ? t('dmWaitValCycle') : t('dmWaitVal');
+    dmHint.textContent = t('dmWaitHint', COUNTIN_BARS, LOOP_BARS, trackInfo);
     bars[0].classList.add('countin-active');
     for(let i=1;i<4;i++) bars[i].classList.add('upcoming');
     const beats = bars[0].querySelectorAll('.dm-beat');
     if(beats[beatInBar]) beats[beatInBar].classList.add('on');
   } else if(L.state === 'countin'){
     root.classList.add('is-countin');
-    dmName.textContent = 'COUNT-IN';
-    dmVal.textContent = '▷ 预备 ' + Math.min(L.countinBar+1, COUNTIN_BARS) + ' / ' + COUNTIN_BARS;
-    dmHint.textContent = '准备弹琴 — ' + Math.max(0, COUNTIN_BARS - L.countinBar) + ' 小节后开始录制' + trackInfo;
+    dmName.textContent = t('dmCountinName');
+    dmVal.textContent = t('dmCountinVal', Math.min(L.countinBar+1, COUNTIN_BARS), COUNTIN_BARS);
+    dmHint.textContent = t('dmCountinHint', Math.max(0, COUNTIN_BARS - L.countinBar), trackInfo);
     for(let i=0;i<4;i++){
       if(i >= COUNTIN_BARS) bars[i].classList.add('upcoming');
       else if(i < L.countinBar) bars[i].classList.add('countin-done');
@@ -1022,9 +1181,9 @@ function updateDrumDisplay(){
     if(beats[beatInBar]) beats[beatInBar].classList.add('on');
   } else if(L.state === 'recording'){
     root.classList.add('is-rec');
-    dmName.textContent = 'RECORDING T' + ((L.recordingTrackIdx>=0?L.recordingTrackIdx:0)+1);
-    dmVal.textContent = '● 录制 ' + (L.currentRecBar+1) + ' / ' + LOOP_BARS;
-    dmHint.textContent = '弹琴！剩 ' + (LOOP_BARS - L.currentRecBar) + ' 小节 — 双手"6"急停' + trackInfo;
+    dmName.textContent = t('dmRecName', (L.recordingTrackIdx>=0?L.recordingTrackIdx:0)+1);
+    dmVal.textContent = t('dmRecVal', L.currentRecBar+1, LOOP_BARS);
+    dmHint.textContent = t('dmRecHint', LOOP_BARS - L.currentRecBar, trackInfo);
     const activeSeg = barToSeg(L.currentRecBar);
     for(let i=0;i<4;i++){
       if(i < activeSeg) bars[i].classList.add('completed');
@@ -1035,10 +1194,9 @@ function updateDrumDisplay(){
     if(beats[beatInBar]) beats[beatInBar].classList.add('on');
   } else if(L.state === 'playing'){
     root.classList.add('is-play');
-    dmName.textContent = 'LOOP';
-    if(L.tracks.length >= MAX_TRACKS) dmVal.textContent = '▶ ' + L.tracks.length + ' 轨叠加';
-    else dmVal.textContent = '▶ PLAYING · ' + L.tracks.length + '/' + MAX_TRACKS + ' 轨';
-    dmHint.textContent = (L.tracks.length < MAX_TRACKS) ? ('比 3 叠加第 ' + (L.tracks.length+1) + ' 轨 · "6"急停') : ('比 3 重录第 2 轨 · "6"急停');
+    dmName.textContent = t('dmLoopName');
+    dmVal.textContent = (L.tracks.length >= MAX_TRACKS) ? t('dmLoopValStacked', L.tracks.length) : t('dmLoopValPlaying', L.tracks.length, MAX_TRACKS);
+    dmHint.textContent = (L.tracks.length < MAX_TRACKS) ? t('dmLoopHintAdd', L.tracks.length+1) : t('dmLoopHintReplace');
     const elapsed = AE.ctx.currentTime - L.cycleStartT;
     const cycleDur = LOOP_BARS * barDuration();
     const cyclePos = ((elapsed % cycleDur) + cycleDur) % cycleDur;
@@ -1051,16 +1209,16 @@ function updateDrumDisplay(){
     if(beats[beatInBar]) beats[beatInBar].classList.add('on');
   } else if(AE.drumOn){
     root.classList.add('is-drum');
-    dmName.textContent = 'DRUM';
-    dmVal.textContent = '● ON  ·  ' + AE.bpm + ' BPM';
-    dmHint.textContent = '比 3 录 ' + LOOP_BARS + ' 小节 Loop (含 ' + COUNTIN_BARS + ' 小节预备拍) · 比 2 关鼓机';
+    dmName.textContent = t('dmDrumName');
+    dmVal.textContent = t('dmDrumVal', AE.bpm);
+    dmHint.textContent = t('dmDrumHint', LOOP_BARS, COUNTIN_BARS);
     const beats = bars[0].querySelectorAll('.dm-beat');
     if(beats[beatInBar]) beats[beatInBar].classList.add('on');
   } else {
     root.classList.add('is-off');
-    dmName.textContent = 'DRUM / LOOP';
-    dmVal.textContent = '— OFF —';
-    dmHint.textContent = '比 1 启动鼓机 · 比 3 录 ' + LOOP_BARS + ' 小节 Loop';
+    dmName.textContent = t('dmOffName');
+    dmVal.textContent = t('dmOff');
+    dmHint.textContent = t('dmOffHint', LOOP_BARS);
   }
 }
 (function dispLoop(){ updateDrumDisplay(); requestAnimationFrame(dispLoop); })();
@@ -1253,7 +1411,7 @@ async function startCamera(){
   const video = document.getElementById('video');
   const overlay = document.getElementById('overlay');
   const octx = overlay.getContext('2d');
-  if(typeof Hands === 'undefined'){ camTxt.textContent='MediaPipe 加载失败'; camPill.classList.add('err'); return; }
+  if(typeof Hands === 'undefined'){ setI18nText(camTxt,'mediapipeFailed'); camPill.classList.add('err'); return; }
   try{
     const hands = new Hands({ locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
     hands.setOptions({maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.6, minTrackingConfidence:0.5});
@@ -1287,8 +1445,8 @@ async function startCamera(){
     }
     cover.classList.add('hidden');
     camPill.classList.add('ok'); camPill.classList.remove('err','warn');
-    camTxt.textContent='摄像头已启动';
-  }catch(err){ console.error(err); camPill.classList.add('err'); camTxt.textContent='摄像头启动失败'; }
+    setI18nText(camTxt,'camOn');
+  }catch(err){ console.error(err); camPill.classList.add('err'); setI18nText(camTxt,'camFailed'); }
 }
 
 /* ============================================================
@@ -1397,7 +1555,7 @@ function analyzeGesture(lm){
     GS.isFist=false;
     GS.hSpeed=lerp(GS.hSpeed,0,0.2); GS.hSpeedAbs=Math.abs(GS.hSpeed);
     GS.lastWristX=null;
-    gNameEl.textContent='没看到手'; gBigEl.textContent='—';
+    gNameEl.textContent=t('gestureNone'); gBigEl.textContent='—';
     processFingerCount(-1, 0);
     return;
   }
@@ -1433,25 +1591,23 @@ function analyzeGesture(lm){
   const effective = effectiveGestureCode(lm);
   processFingerCount(effective, 1);
 
-  let name='中性', big='—';
-  if(shaka){ name='🤙 比 6 (急停 · 按住 1s)'; big='6'; }
+  let name='', big='—';
+  if(shaka){ name=t('gShaka'); big='6'; }
   else if(singleCount === 0){
-    name = (GS.fistFade<0.95) ? ('✊ 握拳 ('+Math.round(GS.fistFade*100)+'%)') : '✊ 握拳';
+    name = (GS.fistFade<0.95) ? t('gFistFade', Math.round(GS.fistFade*100)) : t('gFist');
     big='✊';
   }
-  else if(singleCount === 1){ name='☝️ 1 (Drum 开)'; big='1'; }
-  else if(singleCount === 2){ name='✌️ 2 (Drum 关)'; big='2'; }
-  else if(singleCount === 3){ name='🤟 3 (录/叠轨)'; big='3'; }
-  else if(singleCount === 4){ name='4 指 (无触发)'; big='4'; }
+  else if(singleCount === 1){ name=t('g1'); big='1'; }
+  else if(singleCount === 2){ name=t('g2'); big='2'; }
+  else if(singleCount === 3){ name=t('g3'); big='3'; }
+  else if(singleCount === 4){ name=t('g4'); big='4'; }
   else if(singleCount === 5){
-    if(heightRaw > 0.65) name='🖐️⬆️ 张开+抬高';
-    else name='🖐️ 五指张开';
+    name = heightRaw > 0.65 ? t('g5Raise') : t('g5Open');
     big='🖐️';
   }
-  // 横向位置 (cello/violin) — 优先显示弦乐状态 (除了已经在做手势触发时)
   if(!shaka && effective === -1){
-    if(GS.celloAmt > 0.25){ name = '➡️ 大提琴 '+Math.round(GS.celloAmt*100)+'%'; big='🎻'; }
-    else if(GS.violinAmt > 0.25){ name = '⬅️ 小提琴 '+Math.round(GS.violinAmt*100)+'%'; big='🎻'; }
+    if(GS.celloAmt > 0.25){ name = t('gCello', Math.round(GS.celloAmt*100)); big='🎻'; }
+    else if(GS.violinAmt > 0.25){ name = t('gViolin', Math.round(GS.violinAmt*100)); big='🎻'; }
   }
   gNameEl.textContent=name; gBigEl.textContent=big;
 }
@@ -1563,7 +1719,7 @@ function sendLedSysEx(midi,color){ if(MIDI_OUT) _pkSendOne(MIDI_OUT, midi, LED_C
 async function initMIDI(){
   const pill=document.getElementById('midiPill');
   const txt=document.getElementById('midiTxt');
-  if(!navigator.requestMIDIAccess){ pill.classList.add('err'); txt.textContent='浏览器不支持 Web MIDI'; return; }
+  if(!navigator.requestMIDIAccess){ pill.classList.add('err'); setI18nText(txt,'midiUnsupported'); return; }
   try{
     const access = await navigator.requestMIDIAccess({sysex:true});
     function refresh(){
@@ -1576,17 +1732,18 @@ async function initMIDI(){
       if(useIn){
         useIn.onmidimessage = onMidi;
         pill.classList.add('ok'); pill.classList.remove('err','warn');
-        txt.textContent = pkIn ? ('PartyKeys · '+useIn.name) : ('MIDI · '+useIn.name);
+        if(pkIn) setI18nText(txt,'midiPK', useIn.name);
+        else     setI18nText(txt,'midiAny', useIn.name);
       } else {
         pill.classList.remove('ok','err'); pill.classList.add('warn');
-        txt.textContent='没检测到 MIDI 设备';
+        setI18nText(txt,'midiNoDevice');
       }
       MIDI_OUT = pkOut || null;
       if(MIDI_OUT) _pkLedInit(MIDI_OUT);
     }
     refresh();
     access.onstatechange = refresh;
-  }catch(err){ pill.classList.add('err'); txt.textContent='MIDI 权限被拒绝'; }
+  }catch(err){ pill.classList.add('err'); setI18nText(txt,'midiDenied'); }
 }
 function onMidi(e){
   const [status,d1,d2]=e.data;
@@ -1635,7 +1792,19 @@ document.getElementById('startBtn').addEventListener('click', async ()=>{
   initAudio();
   if(AE.ctx.state==='suspended') await AE.ctx.resume();
   await startCamera();
-  document.getElementById('startBtn').textContent='✓ 已启动';
+  const btn = document.getElementById('startBtn');
+  btn.removeAttribute('data-i18n');
+  setI18nText(btn, 'startBtnDone');
+});
+
+// Language toggle
+document.querySelectorAll('.lang-btn').forEach(b=>{
+  b.addEventListener('click', ()=> setLang(b.getAttribute('data-lang')));
+});
+// Apply language on load
+applyStaticI18n();
+document.querySelectorAll('.lang-btn').forEach(b=>{
+  b.classList.toggle('active', b.getAttribute('data-lang') === LANG);
 });
 addEventListener('pointerdown',()=>{ if(AE.ctx && AE.ctx.state==='suspended') AE.ctx.resume(); });
 window.addEventListener('beforeunload',()=>{ if(MIDI_OUT) _pkAllOff(MIDI_OUT); });
