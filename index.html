@@ -273,7 +273,7 @@
       <div class="row"><span data-i18n="cheatLeft">⬅️ 手往左</span><b data-i18n="cheatLeftEffect">+ 小提琴 (Violin)</b></div>
       <div class="row" style="border-top:1px solid rgba(255,255,255,.12);padding-top:5px;margin-top:3px"><span data-i18n="cheat1">☝️ 1 指</span><b data-i18n="cheat1Effect">Drum 开</b></div>
       <div class="row"><span data-i18n="cheat2">✌️ 2 指</span><b data-i18n="cheat2Effect">Drum 关</b></div>
-      <div class="row"><span data-i18n="cheat3">🤟 3 指</span><b data-i18n="cheat3Effect">录 / 叠加下一轨</b></div>
+      <div class="row"><span data-i18n="cheat3">🤟 3 指</span><b data-i18n="cheat3Effect">录 / 重录 Loop</b></div>
       <div class="row"><span data-i18n="cheat6">🤙 单手"6"</span><b data-i18n="cheat6Effect">急停 (拇指+小指, 按住 1s)</b></div>
     </div>
 
@@ -322,7 +322,7 @@ const I18N = {
     cheatLeft:'⬅️ 手往左', cheatLeftEffect:'+ 小提琴 (Violin)',
     cheat1:'☝️ 1 指', cheat1Effect:'Drum 开',
     cheat2:'✌️ 2 指', cheat2Effect:'Drum 关',
-    cheat3:'🤟 3 指', cheat3Effect:'录 / 叠加下一轨',
+    cheat3:'🤟 3 指', cheat3Effect:'录 / 重录 Loop',
     cheat6:'🤙 单手"6"', cheat6Effect:'急停 (拇指+小指, 按住 1s)',
     coverTitle:'📷 摄像头未启动', coverHint:'点击右上角"启动"按钮，将一只手伸到摄像头前作指挥', coverHint2:'建议: 右手弹琴 · 左手指挥',
     kbInfo:'36 键 · C3 → B5 · MIDI 48–83 · 鼠标点击 · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… 三排 = 白键',
@@ -335,19 +335,15 @@ const I18N = {
     dmDrumHint:(lb,cb)=>`比 3 录 ${lb} 小节 Loop (含 ${cb} 小节预备拍) · 比 2 关鼓机`,
     dmCountinName:'COUNT-IN',
     dmCountinVal:(c,t)=>`▷ 预备 ${c} / ${t}`,
-    dmCountinHint:(r,ti)=>`准备弹琴 — ${r} 小节后开始录制${ti}`,
-    dmWaitName:'WAITING', dmWaitNameCycle:'WAITING CYCLE',
-    dmWaitVal:'◐ 等小节结束', dmWaitValCycle:'◐ 等下个 Loop 起点',
-    dmWaitHint:(cb,lb,ti)=>`即将开始 ${cb} 小节预备拍 (loop ${lb} 小节${ti})`,
-    dmRecName:t=>`RECORDING T${t}`,
+    dmCountinHint:(r,ti)=>`准备弹琴 — ${r} 小节后开始录制`,
+    dmWaitName:'WAITING',
+    dmWaitVal:'◐ 等小节结束',
+    dmWaitHint:(cb,lb,ti)=>`即将开始 ${cb} 小节预备拍 (loop ${lb} 小节)`,
     dmRecVal:(c,t)=>`● 录制 ${c} / ${t}`,
-    dmRecHint:(r,ti)=>`弹琴！剩 ${r} 小节 — 双手"6"急停${ti}`,
+    dmRecHint:(r,ti)=>`弹琴！剩 ${r} 小节 — "6"急停`,
     dmLoopName:'LOOP',
-    dmLoopValPlaying:(c,m)=>`▶ PLAYING · ${c}/${m} 轨`,
-    dmLoopValStacked:c=>`▶ ${c} 轨叠加`,
-    dmLoopHintAdd:n=>`比 3 叠加第 ${n} 轨 · "6"急停`,
-    dmLoopHintReplace:'比 3 重录第 2 轨 · "6"急停',
-    trackInfo:(c,m)=>` · ${c}/${m} 轨`,
+    dmLoopValPlaying:'▶ PLAYING',
+    dmLoopHintReplace:'比 3 重录 · "6"急停',
     // gesture names
     gShaka:'🤙 比 6 (急停 · 按住 1s)',
     gFist:'✊ 握拳', gFistFade:p=>`✊ 握拳 (${p}%)`,
@@ -377,7 +373,7 @@ const I18N = {
     cheatLeft:'⬅️ Hand left', cheatLeftEffect:'+ Violin',
     cheat1:'☝️ 1 finger', cheat1Effect:'Drums on',
     cheat2:'✌️ 2 fingers', cheat2Effect:'Drums off',
-    cheat3:'🤟 3 fingers', cheat3Effect:'Record / Overdub',
+    cheat3:'🤟 3 fingers', cheat3Effect:'Record / Re-record',
     cheat6:'🤙 Shaka "6"', cheat6Effect:'Stop (thumb+pinky, hold 1s)',
     coverTitle:'📷 Camera off', coverHint:'Click "Start" top-right; hold one hand up to conduct', coverHint2:'Tip: right hand plays · left hand conducts',
     kbInfo:'36 keys · C3 → B5 · MIDI 48–83 · click · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… rows = white keys',
@@ -389,19 +385,15 @@ const I18N = {
     dmDrumHint:(lb,cb)=>`3 fingers to record ${lb}-bar loop (with ${cb}-bar pre-roll) · 2 fingers to stop`,
     dmCountinName:'COUNT-IN',
     dmCountinVal:(c,t)=>`▷ Pre ${c} / ${t}`,
-    dmCountinHint:(r,ti)=>`Get ready — recording in ${r} bars${ti}`,
-    dmWaitName:'WAITING', dmWaitNameCycle:'WAITING CYCLE',
-    dmWaitVal:'◐ Wait for bar', dmWaitValCycle:'◐ Wait for loop start',
-    dmWaitHint:(cb,lb,ti)=>`Starting ${cb}-bar pre-roll (loop ${lb} bars${ti})`,
-    dmRecName:t=>`RECORDING T${t}`,
+    dmCountinHint:(r,ti)=>`Get ready — recording in ${r} bars`,
+    dmWaitName:'WAITING',
+    dmWaitVal:'◐ Wait for bar',
+    dmWaitHint:(cb,lb,ti)=>`Starting ${cb}-bar pre-roll (loop ${lb} bars)`,
     dmRecVal:(c,t)=>`● REC ${c} / ${t}`,
-    dmRecHint:(r,ti)=>`Play! ${r} bars left — shaka "6" to stop${ti}`,
+    dmRecHint:(r,ti)=>`Play! ${r} bars left — shaka "6" to stop`,
     dmLoopName:'LOOP',
-    dmLoopValPlaying:(c,m)=>`▶ PLAYING · ${c}/${m} tracks`,
-    dmLoopValStacked:c=>`▶ ${c} tracks layered`,
-    dmLoopHintAdd:n=>`3 fingers to add track ${n} · "6" to stop`,
-    dmLoopHintReplace:'3 fingers to re-record T2 · "6" to stop',
-    trackInfo:(c,m)=>` · ${c}/${m} tracks`,
+    dmLoopValPlaying:'▶ PLAYING',
+    dmLoopHintReplace:'3 fingers to re-record · "6" to stop',
     gShaka:'🤙 Shaka 6 (stop · hold 1s)',
     gFist:'✊ Fist', gFistFade:p=>`✊ Fist (${p}%)`,
     g1:'☝️ 1 (drums on)', g2:'✌️ 2 (drums off)', g3:'🤟 3 (record/overdub)',
@@ -697,6 +689,11 @@ function wrapStop(ctx, out, oscs, releaseS){
       out.gain.setValueAtTime(out.gain.value||0.0001, t);
       out.gain.exponentialRampToValueAtTime(0.0001, t+releaseS);
       for(const o of oscs){ try{o.stop(t+releaseS+0.1)}catch(e){} }
+      // 防泄漏：尾音结束后把节点从 audio graph 上断开，让 GC 能回收
+      setTimeout(()=>{
+        try{ out.disconnect(); }catch(e){}
+        for(const o of oscs){ try{ o.disconnect(); }catch(e){} }
+      }, (releaseS+0.2)*1000);
     }
   };
 }
@@ -711,7 +708,7 @@ const VOICES = {
 let CURRENT_VOICE = 'piano';
 let COUNTIN_BARS = 2;     // 1 / 2 / 4
 let LOOP_BARS = 4;        // 4 / 8 — loop 长度
-const MAX_TRACKS = 2;     // 最多 2 轨 loop + 鼓机
+const MAX_TRACKS = 1;     // 单轨 loop + 鼓机
 function makeVoice(midi, vel, when){ return VOICES[CURRENT_VOICE](midi, vel, when); }
 
 /* ---------- pad voice (always saw-pad, separate from main timbres) ---------- */
@@ -740,6 +737,7 @@ function padVoice(midi){
       out.gain.setValueAtTime(out.gain.value||0.0001,t);
       out.gain.exponentialRampToValueAtTime(0.0001,t+1.2);
       for(const o of oscs){ try{o.stop(t+1.4)}catch(e){} }
+      setTimeout(()=>{ try{out.disconnect();}catch(e){} for(const o of oscs){ try{o.disconnect();}catch(e){} } }, 1500);
     }
   };
 }
@@ -785,6 +783,7 @@ function celloVoice(midi){
       out.gain.exponentialRampToValueAtTime(0.0001,t+0.9);
       for(const o of oscs){ try{o.stop(t+1.0)}catch(e){} }
       try{vib.stop(t+1.0)}catch(e){}
+      setTimeout(()=>{ try{out.disconnect();}catch(e){} for(const o of oscs){ try{o.disconnect();}catch(e){} } try{vib.disconnect();}catch(e){} }, 1100);
     }
   };
 }
@@ -824,11 +823,13 @@ function violinVoice(midi){
       out.gain.exponentialRampToValueAtTime(0.0001,t+0.8);
       for(const o of oscs){ try{o.stop(t+0.9)}catch(e){} }
       try{vib.stop(t+0.9)}catch(e){}
+      setTimeout(()=>{ try{out.disconnect();}catch(e){} for(const o of oscs){ try{o.disconnect();}catch(e){} } try{vib.disconnect();}catch(e){} }, 1000);
     }
   };
 }
 
 /* ---------- DRUMS ---------- */
+function _disc(...nodes){ for(const n of nodes){ try{ n.disconnect(); }catch(e){} } }
 function drumKick(t){
   const ctx=AE.ctx;
   const o=ctx.createOscillator(); o.type='sine';
@@ -839,6 +840,7 @@ function drumKick(t){
   g.gain.exponentialRampToValueAtTime(1.0,t+0.005);
   g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
   o.connect(g).connect(AE.drumBus);
+  o.onended = ()=> _disc(o,g);
   o.start(t); o.stop(t+0.3);
 }
 function drumSnare(t){
@@ -853,6 +855,8 @@ function drumSnare(t){
   const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=200;
   const og=ctx.createGain(); og.gain.setValueAtTime(0.0001,t); og.gain.exponentialRampToValueAtTime(0.4,t+0.005); og.gain.exponentialRampToValueAtTime(0.001,t+0.1);
   o.connect(og).connect(AE.drumBus);
+  noise.onended = ()=> _disc(noise,hp,ng);
+  o.onended = ()=> _disc(o,og);
   noise.start(t); noise.stop(t+0.2); o.start(t); o.stop(t+0.12);
 }
 function drumHat(t,open=false){
@@ -865,6 +869,7 @@ function drumHat(t,open=false){
   const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000;
   const g=ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.4,t+0.002); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
   noise.connect(hp).connect(g).connect(AE.drumBus);
+  noise.onended = ()=> _disc(noise,hp,g);
   noise.start(t); noise.stop(t+dur+0.02);
 }
 const PATTERN = {
@@ -1039,55 +1044,36 @@ function armRecording(){
   initAudio();
   const L = AE.loop;
 
-  // 是否是叠录 (overdub) ？= 已经有 track 在 playing 中
-  const isOverdub = (L.state === 'playing' && L.tracks.length >= 1);
+  // 单轨模式: 比 3 总是从头录一轨（不管之前有没有 loop）
+  // 清掉所有 tracks 和正在响的 voices
+  for(const v of L.liveVoices){ try{ v.stop(); }catch(e){} }
+  L.liveVoices.clear();
+  for(const m of L.liveLeds){ unflashLoopKey(m); sendLedSysEx(m,'off'); }
+  L.liveLeds.clear();
+  L.tracks = [{ notes:[], recordBarDur: barDuration() }];
+  L.recordingTrackIdx = 0;
+  L.activeOn.clear();
+  L.scheduled.clear();
+  L.cycle = 0;
+  L.barsInPlaying = 0;
+  L.currentRecBar = 0;
+  L.isFresh = true;
+  L.pendingWaitCycle = false;
 
-  if(isOverdub){
-    // 叠录：保留现有 tracks 继续播
-    let trackIdx;
-    if(L.tracks.length < MAX_TRACKS){
-      L.tracks.push({ notes:[], recordBarDur: barDuration() });
-      trackIdx = L.tracks.length - 1;
-    } else {
-      L.tracks[MAX_TRACKS-1] = { notes:[], recordBarDur: barDuration() };
-      trackIdx = MAX_TRACKS - 1;
-    }
-    L.recordingTrackIdx = trackIdx;
-    L.activeOn.clear();
-    L.currentRecBar = 0;
-    L.isFresh = false;
+  if(AE.drumOn && AE.schedTimer){
+    // 鼓机已经在跑：等下一个小节起点开始预备
     L.state = 'pending-countin';
-    L.pendingWaitCycle = true;
+    L.countinBar = 0;
   } else {
-    // 全新一轮：清掉所有 tracks 和正在响的 voices
-    for(const v of L.liveVoices){ try{ v.stop(); }catch(e){} }
-    L.liveVoices.clear();
-    for(const m of L.liveLeds){ unflashLoopKey(m); sendLedSysEx(m,'off'); }
-    L.liveLeds.clear();
-    L.tracks = [{ notes:[], recordBarDur: barDuration() }];
-    L.recordingTrackIdx = 0;
-    L.activeOn.clear();
-    L.scheduled.clear();
-    L.cycle = 0;
-    L.barsInPlaying = 0;
-    L.currentRecBar = 0;
-    L.isFresh = true;
-
-    if(AE.drumOn && AE.schedTimer){
-      L.state = 'pending-countin';
-      L.pendingWaitCycle = false;
-      L.countinBar = 0;
-    } else {
-      // 鼓机没开：起鼓机 + 立即进入预备
-      AE.currentStep = 0;
-      AE.playingStep = 0;
-      AE.nextNoteTime = AE.ctx.currentTime + 0.05;
-      AE.drumOn = true;
-      if(!AE.schedTimer) startTransport();
-      L.state = 'countin';
-      L.countinStartT = AE.ctx.currentTime + 0.05;
-      L.countinBar = 0;
-    }
+    // 鼓机没开：起鼓机 + 立即进入预备
+    AE.currentStep = 0;
+    AE.playingStep = 0;
+    AE.nextNoteTime = AE.ctx.currentTime + 0.05;
+    AE.drumOn = true;
+    if(!AE.schedTimer) startTransport();
+    L.state = 'countin';
+    L.countinStartT = AE.ctx.currentTime + 0.05;
+    L.countinBar = 0;
   }
   updateBpmLock();
 }
@@ -1154,12 +1140,13 @@ function updateDrumDisplay(){
   const segBars = LOOP_BARS / 4;
   function barToSeg(bar){ return clamp(Math.floor(bar / segBars), 0, 3); }
 
-  const trackInfo = L.tracks.length > 0 ? t('trackInfo', L.tracks.length, MAX_TRACKS) : '';
+  // 单轨模式不再显示 trackInfo
+  const trackInfo = '';
 
   if(L.state === 'pending-countin'){
     root.classList.add('is-countin');
-    dmName.textContent = L.pendingWaitCycle ? t('dmWaitNameCycle') : t('dmWaitName');
-    dmVal.textContent = L.pendingWaitCycle ? t('dmWaitValCycle') : t('dmWaitVal');
+    dmName.textContent = t('dmWaitName');
+    dmVal.textContent = t('dmWaitVal');
     dmHint.textContent = t('dmWaitHint', COUNTIN_BARS, LOOP_BARS, trackInfo);
     bars[0].classList.add('countin-active');
     for(let i=1;i<4;i++) bars[i].classList.add('upcoming');
@@ -1181,7 +1168,7 @@ function updateDrumDisplay(){
     if(beats[beatInBar]) beats[beatInBar].classList.add('on');
   } else if(L.state === 'recording'){
     root.classList.add('is-rec');
-    dmName.textContent = t('dmRecName', (L.recordingTrackIdx>=0?L.recordingTrackIdx:0)+1);
+    dmName.textContent = 'RECORDING';
     dmVal.textContent = t('dmRecVal', L.currentRecBar+1, LOOP_BARS);
     dmHint.textContent = t('dmRecHint', LOOP_BARS - L.currentRecBar, trackInfo);
     const activeSeg = barToSeg(L.currentRecBar);
@@ -1195,8 +1182,8 @@ function updateDrumDisplay(){
   } else if(L.state === 'playing'){
     root.classList.add('is-play');
     dmName.textContent = t('dmLoopName');
-    dmVal.textContent = (L.tracks.length >= MAX_TRACKS) ? t('dmLoopValStacked', L.tracks.length) : t('dmLoopValPlaying', L.tracks.length, MAX_TRACKS);
-    dmHint.textContent = (L.tracks.length < MAX_TRACKS) ? t('dmLoopHintAdd', L.tracks.length+1) : t('dmLoopHintReplace');
+    dmVal.textContent = t('dmLoopValPlaying');
+    dmHint.textContent = t('dmLoopHintReplace');
     const elapsed = AE.ctx.currentTime - L.cycleStartT;
     const cycleDur = LOOP_BARS * barDuration();
     const cyclePos = ((elapsed % cycleDur) + cycleDur) % cycleDur;
@@ -1414,7 +1401,8 @@ async function startCamera(){
   if(typeof Hands === 'undefined'){ setI18nText(camTxt,'mediapipeFailed'); camPill.classList.add('err'); return; }
   try{
     const hands = new Hands({ locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-    hands.setOptions({maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.6, minTrackingConfidence:0.5});
+    // modelComplexity 0 = lite model, 显著降低 CPU 占用，长时间运行更稳
+    hands.setOptions({maxNumHands:2, modelComplexity:0, minDetectionConfidence:0.6, minTrackingConfidence:0.5});
     hands.onResults((res)=>{
       overlay.width = video.videoWidth || 640;
       overlay.height = video.videoHeight || 480;
