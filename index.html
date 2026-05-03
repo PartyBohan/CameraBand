@@ -48,7 +48,8 @@
 
   /* ---------- camera fills middle row ---------- */
   .stage{position:relative;background:#000;overflow:hidden}
-  .stage video,.stage canvas.overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+  /* contain: 显示完整 FOV，左右留黑边，比 cover 多看到约 1/3 横向画面 */
+  .stage video,.stage canvas.overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1)}
   .stage canvas.overlay{pointer-events:none}
   .cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.55);text-align:center;padding:40px;font-size:15px;color:var(--ink-dim);gap:14px;z-index:8}
   .cover.hidden{display:none}
@@ -1423,10 +1424,11 @@ async function startCamera(){
     });
     MP_HANDS = hands;
     if(typeof Camera !== 'undefined'){
-      MP_CAM = new Camera(video, { onFrame: async ()=>{ if(MP_HANDS) await MP_HANDS.send({image:video}); }, width:640, height:480 });
+      // 1280x720 16:9 — 笔记本摄像头大多原生 16:9, 比 640x480 (4:3) 横向视野更宽
+      MP_CAM = new Camera(video, { onFrame: async ()=>{ if(MP_HANDS) await MP_HANDS.send({image:video}); }, width:1280, height:720 });
       await MP_CAM.start();
     } else {
-      const stream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480},audio:false});
+      const stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720}},audio:false});
       video.srcObject = stream;
       const pump = async ()=>{ if(video.readyState>=2 && MP_HANDS) await MP_HANDS.send({image:video}); requestAnimationFrame(pump); };
       pump();
