@@ -274,7 +274,7 @@
       <div class="row"><span data-i18n="cheatLeft">⬅️ 手往左</span><b data-i18n="cheatLeftEffect">+ 小提琴 (Violin)</b></div>
       <div class="row" style="border-top:1px solid rgba(255,255,255,.12);padding-top:5px;margin-top:3px"><span data-i18n="cheat1">☝️ 1 指</span><b data-i18n="cheat1Effect">Drum 开</b></div>
       <div class="row"><span data-i18n="cheat2">✌️ 2 指</span><b data-i18n="cheat2Effect">Drum 关</b></div>
-      <div class="row"><span data-i18n="cheat3">🤟 3 指</span><b data-i18n="cheat3Effect">录 / 重录 Loop</b></div>
+      <div class="row"><span data-i18n="cheat3">🤟 3 指</span><b data-i18n="cheat3Effect">录 Loop · 弹根音自动配和弦</b></div>
       <div class="row"><span data-i18n="cheat6">🤙 单手"6"</span><b data-i18n="cheat6Effect">急停 (拇指+小指, 按住 1s)</b></div>
     </div>
 
@@ -323,7 +323,7 @@ const I18N = {
     cheatLeft:'⬅️ 手往左', cheatLeftEffect:'+ 小提琴 (Violin)',
     cheat1:'☝️ 1 指', cheat1Effect:'Drum 开',
     cheat2:'✌️ 2 指', cheat2Effect:'Drum 关',
-    cheat3:'🤟 3 指', cheat3Effect:'录 / 重录 Loop',
+    cheat3:'🤟 3 指', cheat3Effect:'录 Loop · 弹根音自动配和弦',
     cheat6:'🤙 单手"6"', cheat6Effect:'急停 (拇指+小指, 按住 1s)',
     coverTitle:'📷 摄像头未启动', coverHint:'点击右上角"启动"按钮，将一只手伸到摄像头前作指挥', coverHint2:'建议: 右手弹琴 · 左手指挥',
     kbInfo:'36 键 · C3 → B5 · MIDI 48–83 · 鼠标点击 · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… 三排 = 白键',
@@ -374,7 +374,7 @@ const I18N = {
     cheatLeft:'⬅️ Hand left', cheatLeftEffect:'+ Violin',
     cheat1:'☝️ 1 finger', cheat1Effect:'Drums on',
     cheat2:'✌️ 2 fingers', cheat2Effect:'Drums off',
-    cheat3:'🤟 3 fingers', cheat3Effect:'Record / Re-record',
+    cheat3:'🤟 3 fingers', cheat3Effect:'Record Loop · auto-chord from root',
     cheat6:'🤙 Shaka "6"', cheat6Effect:'Stop (thumb+pinky, hold 1s)',
     coverTitle:'📷 Camera off', coverHint:'Click "Start" top-right; hold one hand up to conduct', coverHint2:'Tip: right hand plays · left hand conducts',
     kbInfo:'36 keys · C3 → B5 · MIDI 48–83 · click · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… rows = white keys',
@@ -459,10 +459,10 @@ const AE = {
   playingStep:0,
   schedTimer:null,
   loop:{
-    state:'idle',                   // idle | pending-countin | countin | recording | playing
+    state:'idle',
     pendingWaitCycle:false,
-    isFresh:false,                  // 当前 armRecording 是否第一轨 (用来决定 countin→recording 是否重置 cycle 时钟)
-    tracks:[],                      // [{notes:[{midi,vel,t,dur}], recordBarDur}]
+    isFresh:false,
+    tracks:[],
     recordingTrackIdx:-1,
     activeOn:new Map(),
     startT:0,
@@ -474,7 +474,8 @@ const AE = {
     currentRecBar:0,
     scheduled:new Set(),
     liveVoices:new Set(),
-    liveLeds:new Set()
+    liveLeds:new Set(),
+    chordSlots:[false,false,false,false]   // 每个和弦槽是否已被触发
   }
 };
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
@@ -1060,6 +1061,7 @@ function armRecording(){
   L.currentRecBar = 0;
   L.isFresh = true;
   L.pendingWaitCycle = false;
+  L.chordSlots = [false, false, false, false];   // 重置和弦槽
 
   if(AE.drumOn && AE.schedTimer){
     // 鼓机已经在跑：等下一个小节起点开始预备
@@ -1095,12 +1097,75 @@ function stopAll(){
   stopTransport();
   updateBpmLock();
 }
+/* ============================================================
+   AUTO-CHORD: 在 loop 录制时, 弹根音自动生成和弦
+   - slot 0/1 (前两个): 简单大三/小三和弦 (3 个音)
+   - slot 2/3 (后两个): 加 7 度变 maj7 / min7 / 7 / m7b5 (4 个音, 更丰富)
+   - 默认按 C 大调 / A 小调 推断和弦性质
+   ============================================================ */
+function chordTypeForRoot(midi){
+  const pc = ((midi % 12) + 12) % 12;
+  if(pc === 0)  return 'I';      // C  → 大三
+  if(pc === 2)  return 'ii';     // D  → 小三
+  if(pc === 4)  return 'iii';    // E  → 小三
+  if(pc === 5)  return 'IV';     // F  → 大三
+  if(pc === 7)  return 'V';      // G  → 大三 (后两槽 → 属七 dom7)
+  if(pc === 9)  return 'vi';     // A  → 小三
+  if(pc === 11) return 'vii';    // B  → 减
+  return 'I';                    // 黑键默认大三
+}
+function chordIntervalsFor(type, slotIdx){
+  const seventh = slotIdx >= 2;
+  switch(type){
+    case 'I':
+    case 'IV':  return seventh ? [0,4,7,11] : [0,4,7];   // maj / maj7
+    case 'V':   return seventh ? [0,4,7,10] : [0,4,7];   // maj / dom7
+    case 'ii':
+    case 'iii':
+    case 'vi':  return seventh ? [0,3,7,10] : [0,3,7];   // min / min7
+    case 'vii': return seventh ? [0,3,6,10] : [0,3,6];   // dim / m7♭5
+    default:    return seventh ? [0,4,7,11] : [0,4,7];
+  }
+}
+function chordSlotForBar(bar){
+  // LOOP_BARS=4 → 1 bar/slot;  LOOP_BARS=8 → 2 bars/slot
+  return clamp(Math.floor(bar * 4 / LOOP_BARS), 0, 3);
+}
+
 function loopCaptureOn(midi, vel){
   const L = AE.loop;
   if(L.state === 'recording' && L.recordingTrackIdx >= 0){
     const cycleDur = LOOP_BARS * barDuration();
     const tInCycle = ((AE.ctx.currentTime - L.cycleStartT) % cycleDur + cycleDur) % cycleDur;
     L.activeOn.set(midi, {tInCycle, vel, startTime: AE.ctx.currentTime});
+
+    // —— Auto-chord: 每个 slot 的第一个音触发和弦
+    const barInLoop = Math.floor(tInCycle / barDuration());
+    const slot = chordSlotForBar(barInLoop);
+    if(slot >= 0 && slot < 4 && !L.chordSlots[slot]){
+      L.chordSlots[slot] = true;
+      const type = chordTypeForRoot(midi);
+      const intervals = chordIntervalsFor(type, slot);
+      const slotDur = (LOOP_BARS / 4) * barDuration();
+      const chordDur = slotDur * 0.92;   // 留点缝隙
+      // 根音用户已弹, 我们叠加 3/5 (和 7)
+      for(const intv of intervals.slice(1)){
+        const cm = midi + intv;
+        if(cm < 36 || cm > 96) continue;
+        // 立即播放
+        const v = makeVoice(cm, vel * 0.55);
+        if(v){
+          L.liveVoices.add(v);
+          setTimeout(()=>{ try{v.stop();}catch(e){} L.liveVoices.delete(v); }, chordDur*1000);
+          flashLoopKey(cm); sendLedSysEx(cm,'amber'); L.liveLeds.add(cm);
+          setTimeout(()=>{ unflashLoopKey(cm); sendLedSysEx(cm,'off'); L.liveLeds.delete(cm); }, chordDur*1000);
+        }
+        // 写进 track 让回放也带上
+        L.tracks[L.recordingTrackIdx].notes.push({
+          midi: cm, vel: vel * 0.55, t: tInCycle, dur: chordDur
+        });
+      }
+    }
   }
 }
 function loopCaptureOff(midi){
