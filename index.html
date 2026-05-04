@@ -1353,9 +1353,22 @@ function refreshViolinFromKeys(){
     AE.violinVoices.clear();
     return;
   }
-  // violin 高音 chord: octave / M3+8va / P5+8va / 2 octaves up
+  // 用 chordTypeForRoot 推断当前根音的和弦性质 (大/小/减/属七)，
+  // violin 在 octave 之上叠对应的和弦音，避免大三/小三冲突
+  const type = chordTypeForRoot(root);
+  let intervals;
+  switch(type){
+    case 'I':
+    case 'IV':  intervals = [12, 16, 19, 24]; break;   // 大三 + 8va
+    case 'V':   intervals = [12, 16, 19, 22]; break;   // 属七 (M3 + P5 + m7) + 8va
+    case 'ii':
+    case 'iii':
+    case 'vi':  intervals = [12, 15, 19, 24]; break;   // 小三 (m3 + P5) + 8va
+    case 'vii': intervals = [12, 15, 18, 21]; break;   // 减三/m7♭5
+    default:    intervals = [12, 16, 19, 24];
+  }
   const wanted = new Set();
-  for(const i of [12, 16, 19, 24]){
+  for(const i of intervals){
     const n = root + i;
     if(n>=36 && n<=96) wanted.add(n);
   }
