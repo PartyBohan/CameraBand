@@ -211,6 +211,7 @@
     </div>
 
     <button id="autoHarmonyBtn" class="ah-btn" data-i18n="autoHarmony">🎼 自动配和弦</button>
+    <button id="ledVizBtn" class="ah-btn" data-i18n="ledViz">🎹 LED 指示</button>
 
     <span style="flex:1"></span>
     <div class="lang-toggle">
@@ -314,6 +315,7 @@ const I18N = {
     sub: '摄像头指挥 · 鼓机 · 4小节 Loop',
     voiceLabel: '音色', countinLabel: '预备',
     autoHarmony: '🎼 自动配和弦',
+    ledViz: '🎹 LED 指示',
     bar1:'1 小节', bar2:'2 小节', bar4:'4 小节',
     bar4b:'4 小节', bar8b:'8 小节',
     midiChecking:'检测 MIDI…', camIdle:'摄像头未启动', camOn:'摄像头已启动', camFailed:'摄像头启动失败',
@@ -366,6 +368,7 @@ const I18N = {
     sub: 'Camera Conductor · Drums · 4-bar Loop',
     voiceLabel: 'Voice', countinLabel: 'Pre-roll',
     autoHarmony: '🎼 Auto-Harmony',
+    ledViz: '🎹 LED Cues',
     bar1:'1 bar', bar2:'2 bars', bar4:'4 bars',
     bar4b:'4 bars', bar8b:'8 bars',
     midiChecking:'Checking MIDI…', camIdle:'Camera off', camOn:'Camera on', camFailed:'Camera failed',
@@ -721,6 +724,7 @@ let COUNTIN_BARS = 2;     // 1 / 2 / 4
 let LOOP_BARS = 4;        // 4 / 8 — loop 长度
 const MAX_TRACKS = 1;     // 单轨 loop + 鼓机
 let AUTO_HARMONY = false; // 抬手时自动加 cello + violin 全套交响和声
+let LED_VISUALIZE = false; // PartyKeys LED 全键显示乐队 + 手势分区
 function makeVoice(midi, vel, when){ return VOICES[CURRENT_VOICE](midi, vel, when); }
 
 /* ---------- pad voice (always saw-pad, separate from main timbres) ---------- */
@@ -1805,9 +1809,71 @@ function noteOff(midi){
 let MIDI_OUT=null;
 const LED_COLORS={off:0,red:0x01,green:0x07,blue:0x09,yellow:0x05,cyan:0x08,purple:0x0C,white:0x06,amber:0x05};
 function _pkSendOne(out,note,colorId){ if(out) out.send([0xF0,0x05,0x30,0x7F,0x7F,0x20,0x00,0x71,0x01, note&0x7F, colorId&0x7F, 0xF7]); }
+function _pkSendBatch(out, pairs){
+  if(!out || !pairs.length) return;
+  const msg = [0xF0,0x05,0x30,0x7F,0x7F,0x20,0x00,0x71, pairs.length & 0x7F];
+  for(const [n,c] of pairs){ msg.push(n & 0x7F, c & 0x7F); }
+  msg.push(0xF7);
+  out.send(msg);
+}
 function _pkAllOff(out){ if(out) out.send([0xF0,0x05,0x30,0x7F,0x7F,0x20,0x00,0x71,0x00,0xF7]); }
 function _pkLedInit(out){ if(out) out.send([0xF0,0x05,0x30,0x7F,0x7F,0x20,0x00,0x0F,0x05,0xF7]); }
-function sendLedSysEx(midi,color){ if(MIDI_OUT) _pkSendOne(MIDI_OUT, midi, LED_COLORS[color]||0); }
+function sendLedSysEx(midi,color){
+  // LED_VISUALIZE 开启时由 updateLedVisualization 统一管理 LED, 这里跳过
+  if(LED_VISUALIZE) return;
+  if(MIDI_OUT) _pkSendOne(MIDI_OUT, midi, LED_COLORS[color]||0);
+}
+
+/* ============================================================
+   LED VISUALIZATION (gesture-driven, 全键 LED 当乐队总谱)
+   ============================================================ */
+const _ledState = new Map();   // midi → 当前色号
+function updateLedVisualization(){
+  if(!LED_VISUALIZE || !MIDI_OUT) return;
+  const desired = new Map();
+
+  // Layer 1: 手势分区亮度 (Feature C)
+  // C3-B3 (48-59) = cello 区
+  if(GS.celloAmt > 0.35){
+    for(let m=48; m<=59; m++) desired.set(m, 0x04);   // dark orange
+  }
+  // C4-B4 (60-71) = pad 区
+  if(GS.padAmt > 0.35){
+    for(let m=60; m<=71; m++) desired.set(m, 0x0A);   // dark blue
+  }
+  // C5-B5 (72-83) = violin 区
+  if(GS.violinAmt > 0.35){
+    for(let m=72; m<=83; m++) desired.set(m, 0x0B);   // indigo
+  }
+
+  // Layer 2: 正在响的乐队声部具体音 (Feature A) — 覆盖区域亮度
+  for(const m of AE.celloVoices.keys())  desired.set(m, 0x03);   // bright orange
+  for(const m of AE.padVoices.keys())    desired.set(m, 0x08);   // cyan
+  for(const m of AE.violinVoices.keys()) desired.set(m, 0x0C);   // purple
+
+  // Layer 3: loop 回放音
+  for(const m of AE.loop.liveLeds) desired.set(m, 0x09);  // blue
+
+  // Layer 4: 用户当前按下的音 (最高优先)
+  for(const m of AE.voices.keys()) desired.set(m, 0x07);  // green
+
+  // diff: 只发改变的灯, 减少 SysEx 带宽
+  const changes = [];
+  for(const [m,c] of desired){
+    if(_ledState.get(m) !== c){
+      changes.push([m,c]);
+      _ledState.set(m,c);
+    }
+  }
+  for(const m of Array.from(_ledState.keys())){
+    if(!desired.has(m)){
+      changes.push([m, 0]);
+      _ledState.delete(m);
+    }
+  }
+  if(changes.length > 0) _pkSendBatch(MIDI_OUT, changes);
+}
+(function ledLoop(){ updateLedVisualization(); requestAnimationFrame(ledLoop); })();
 
 async function initMIDI(){
   const pill=document.getElementById('midiPill');
@@ -1855,6 +1921,15 @@ const ahBtn = document.getElementById('autoHarmonyBtn');
 ahBtn.addEventListener('click', ()=>{
   AUTO_HARMONY = !AUTO_HARMONY;
   ahBtn.classList.toggle('on', AUTO_HARMONY);
+});
+const ledBtn = document.getElementById('ledVizBtn');
+ledBtn.addEventListener('click', ()=>{
+  LED_VISUALIZE = !LED_VISUALIZE;
+  ledBtn.classList.toggle('on', LED_VISUALIZE);
+  if(MIDI_OUT){
+    _pkAllOff(MIDI_OUT);
+    _ledState.clear();
+  }
 });
 document.getElementById('countinSelect').addEventListener('change', (e)=>{
   COUNTIN_BARS = parseInt(e.target.value, 10) || 2;
