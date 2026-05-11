@@ -151,8 +151,8 @@
 
   .dm-hint{font-size:11px;color:var(--ink-dim);margin-top:10px;letter-spacing:.5px;min-height:14px}
 
-  /* lyrics panel bottom-left — 高透明度, 镜头能透过 */
-  .hud-lyrics{bottom:12px;left:12px;width:240px;max-height:50vh;display:flex;flex-direction:column;gap:6px;padding:10px 12px;pointer-events:auto;background:rgba(15,16,41,.22);border-color:rgba(255,255,255,.07)}
+  /* lyrics panel — 左侧大面积, 顶住参数区, 左边贴屏 */
+  .hud-lyrics{top:0;left:0;bottom:0;width:320px;max-height:none;display:flex;flex-direction:column;gap:6px;padding:12px 14px;pointer-events:auto;background:rgba(15,16,41,.22);border-color:rgba(255,255,255,.07);border-radius:0 14px 14px 0;border-left:0;border-top:0;border-bottom:0}
   .hud-lyrics:hover{background:rgba(15,16,41,.40);border-color:rgba(255,255,255,.14)}
   .lyrics-head{display:flex;justify-content:space-between;align-items:center}
   .lyrics-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim);text-shadow:0 1px 2px rgba(0,0,0,.7)}
