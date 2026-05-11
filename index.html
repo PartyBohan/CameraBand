@@ -51,12 +51,12 @@
   .ah-btn:hover{color:var(--ink)}
   .ah-btn.on{background:linear-gradient(135deg,rgba(52,211,153,.4),rgba(56,189,248,.4));border-color:rgba(52,211,153,.55);color:var(--ink);box-shadow:0 0 12px rgba(52,211,153,.3)}
 
-  /* voice cards — 右侧 4 张卡牌, 快速选音色 */
-  .voice-cards{position:absolute;top:50%;right:12px;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:6;pointer-events:auto}
-  .voice-card{width:108px;padding:11px 8px 9px;background:rgba(15,16,41,.55);border:1px solid rgba(255,255,255,.12);border-radius:14px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);cursor:pointer;color:var(--ink-dim);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .18s ease}
-  .voice-card:hover{transform:translateX(-3px);color:var(--ink);border-color:rgba(255,255,255,.25)}
-  .vc-icon{font-size:30px;line-height:1;filter:saturate(.85)}
-  .vc-label{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+  /* voice cards — 右侧 2x2 卡牌 */
+  .voice-cards{position:absolute;top:50%;right:12px;transform:translateY(-50%);display:grid;grid-template-columns:repeat(2,96px);gap:10px;z-index:6;pointer-events:auto}
+  .voice-card{padding:11px 6px 9px;background:rgba(15,16,41,.55);border:1px solid rgba(255,255,255,.12);border-radius:14px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);cursor:pointer;color:var(--ink-dim);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .18s ease}
+  .voice-card:hover{transform:translateY(-2px);color:var(--ink);border-color:rgba(255,255,255,.25)}
+  .vc-icon{font-size:28px;line-height:1;filter:saturate(.85)}
+  .vc-label{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
   .voice-card.active .vc-icon{filter:saturate(1.2)}
   .voice-card.active .vc-label{color:var(--ink)}
   /* 每个卡牌的"品牌色" — 激活时显示 */
@@ -151,17 +151,18 @@
 
   .dm-hint{font-size:11px;color:var(--ink-dim);margin-top:10px;letter-spacing:.5px;min-height:14px}
 
-  /* lyrics panel bottom-left */
-  .hud-lyrics{bottom:12px;left:12px;width:300px;max-height:55vh;display:flex;flex-direction:column;gap:8px;padding:12px 14px;pointer-events:auto}
+  /* lyrics panel bottom-left — 高透明度, 镜头能透过 */
+  .hud-lyrics{bottom:12px;left:12px;width:240px;max-height:50vh;display:flex;flex-direction:column;gap:6px;padding:10px 12px;pointer-events:auto;background:rgba(15,16,41,.22);border-color:rgba(255,255,255,.07)}
+  .hud-lyrics:hover{background:rgba(15,16,41,.40);border-color:rgba(255,255,255,.14)}
   .lyrics-head{display:flex;justify-content:space-between;align-items:center}
-  .lyrics-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim)}
+  .lyrics-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim);text-shadow:0 1px 2px rgba(0,0,0,.7)}
   .lyrics-fontctl{display:flex;gap:4px}
-  .lyrics-fontctl button{cursor:pointer;background:transparent;border:0;color:var(--ink-dim);font-size:13px;padding:1px 6px;border-radius:4px;font-family:inherit}
+  .lyrics-fontctl button{cursor:pointer;background:transparent;border:0;color:var(--ink-dim);font-size:12px;padding:1px 6px;border-radius:4px;font-family:inherit}
   .lyrics-fontctl button:hover{background:rgba(255,255,255,.1);color:var(--ink)}
-  .lyrics-body{flex:1;overflow-y:auto;min-height:180px;font-size:15px;line-height:1.7;color:var(--ink);outline:none;white-space:pre-wrap;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.05);transition:border-color .15s}
-  .lyrics-body:focus{border-color:rgba(244,114,182,.4)}
-  .lyrics-body:empty::before{content:attr(data-placeholder);color:var(--ink-dim);opacity:.5;pointer-events:none}
-  .lyrics-body::-webkit-scrollbar{width:6px}
+  .lyrics-body{flex:1;overflow-y:auto;min-height:150px;font-size:14px;line-height:1.55;color:var(--ink);outline:none;white-space:pre-wrap;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.04);transition:all .18s;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+  .lyrics-body:focus{background:rgba(0,0,0,.35);border-color:rgba(244,114,182,.4)}
+  .lyrics-body:empty::before{content:attr(data-placeholder);color:var(--ink-dim);opacity:.5;pointer-events:none;text-shadow:none}
+  .lyrics-body::-webkit-scrollbar{width:5px}
   .lyrics-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
   .lyrics-body::-webkit-scrollbar-track{background:transparent}
 
@@ -213,8 +214,8 @@
     <div class="ctrl" id="countinCtrl">
       <label data-i18n="countinLabel">预备</label>
       <select id="countinSelect">
-        <option value="1" data-i18n="bar1">1 小节</option>
-        <option value="2" selected data-i18n="bar2">2 小节</option>
+        <option value="1" selected data-i18n="bar1">1 小节</option>
+        <option value="2" data-i18n="bar2">2 小节</option>
         <option value="4" data-i18n="bar4">4 小节</option>
       </select>
     </div>
@@ -232,8 +233,8 @@
 
     <span style="flex:1"></span>
     <div class="lang-toggle">
-      <button class="lang-btn active" data-lang="zh">中</button>
-      <button class="lang-btn" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="zh">中</button>
+      <button class="lang-btn active" data-lang="en">EN</button>
     </div>
     <span id="midiPill" class="pill"><span class="dot"></span><span id="midiTxt" data-i18n="midiChecking">检测 MIDI…</span></span>
     <span id="camPill" class="pill"><span class="dot"></span><span id="camTxt" data-i18n="camIdle">摄像头未启动</span></span>
@@ -472,7 +473,7 @@ const I18N = {
     velLabel:'vel'
   }
 };
-let LANG = (navigator.language||'').toLowerCase().startsWith('en') ? 'en' : 'zh';
+let LANG = 'en';   // 默认英语界面
 function t(key, ...args){
   const v = (I18N[LANG] && I18N[LANG][key]) ?? (I18N.zh[key]);
   if(typeof v === 'function') return v(...args);
@@ -855,7 +856,7 @@ const VOICES = {
   synth: synthVoice
 };
 let CURRENT_VOICE = 'piano';
-let COUNTIN_BARS = 2;     // 1 / 2 / 4
+let COUNTIN_BARS = 1;     // 1 / 2 / 4 — 默认 1 小节预备
 let LOOP_BARS = 4;        // 4 / 8 — loop 长度
 const MAX_TRACKS = 1;     // 单轨 loop + 鼓机
 let AUTO_HARMONY = false; // 抬手时自动加 cello + violin 全套交响和声
