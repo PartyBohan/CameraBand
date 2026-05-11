@@ -282,7 +282,7 @@
       <div class="row"><span data-i18n="cheatLeft">⬅️ 手往左</span><b data-i18n="cheatLeftEffect">+ 小提琴 (Violin)</b></div>
       <div class="row" style="border-top:1px solid rgba(255,255,255,.12);padding-top:5px;margin-top:3px"><span data-i18n="cheat1">☝️ 1 指</span><b data-i18n="cheat1Effect">Drum 开</b></div>
       <div class="row"><span data-i18n="cheat2">✌️ 2 指</span><b data-i18n="cheat2Effect">Drum 关</b></div>
-      <div class="row"><span data-i18n="cheat3">🤟 3 指</span><b data-i18n="cheat3Effect">录 Loop · 弹根音自动配和弦</b></div>
+      <div class="row"><span data-i18n="cheat3">🤟 3 指</span><b data-i18n="cheat3Effect">录 Loop · 须先 "6" 才能重录</b></div>
       <div class="row"><span data-i18n="cheat6">🤙 单手"6"</span><b data-i18n="cheat6Effect">急停 (拇指+小指, 按住 1s)</b></div>
     </div>
 
@@ -333,7 +333,7 @@ const I18N = {
     cheatLeft:'⬅️ 手往左', cheatLeftEffect:'+ 小提琴 (Violin)',
     cheat1:'☝️ 1 指', cheat1Effect:'Drum 开',
     cheat2:'✌️ 2 指', cheat2Effect:'Drum 关',
-    cheat3:'🤟 3 指', cheat3Effect:'录 Loop · 弹根音自动配和弦',
+    cheat3:'🤟 3 指', cheat3Effect:'录 Loop · 须先 "6" 才能重录',
     cheat6:'🤙 单手"6"', cheat6Effect:'急停 (拇指+小指, 按住 1s)',
     coverTitle:'📷 摄像头未启动', coverHint:'点击右上角"启动"按钮，将一只手伸到摄像头前作指挥', coverHint2:'建议: 右手弹琴 · 左手指挥',
     kbInfo:'36 键 · C3 → B5 · MIDI 48–83 · 鼠标点击 · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… 三排 = 白键',
@@ -354,7 +354,7 @@ const I18N = {
     dmRecHint:(r,ti)=>`弹琴！剩 ${r} 小节 — "6"急停`,
     dmLoopName:'LOOP',
     dmLoopValPlaying:'▶ PLAYING',
-    dmLoopHintReplace:'比 3 重录 · "6"急停',
+    dmLoopHintReplace:'先 "6" 急停 → 再 "3" 重录 (锁定中)',
     // gesture names
     gShaka:'🤙 比 6 (急停 · 按住 1s)',
     gFist:'✊ 握拳', gFistFade:p=>`✊ 握拳 (${p}%)`,
@@ -386,7 +386,7 @@ const I18N = {
     cheatLeft:'⬅️ Hand left', cheatLeftEffect:'+ Violin',
     cheat1:'☝️ 1 finger', cheat1Effect:'Drums on',
     cheat2:'✌️ 2 fingers', cheat2Effect:'Drums off',
-    cheat3:'🤟 3 fingers', cheat3Effect:'Record Loop · auto-chord from root',
+    cheat3:'🤟 3 fingers', cheat3Effect:'Record Loop · "6" first to re-record',
     cheat6:'🤙 Shaka "6"', cheat6Effect:'Stop (thumb+pinky, hold 1s)',
     coverTitle:'📷 Camera off', coverHint:'Click "Start" top-right; hold one hand up to conduct', coverHint2:'Tip: right hand plays · left hand conducts',
     kbInfo:'36 keys · C3 → B5 · MIDI 48–83 · click · <span class="kbd">Z</span><span class="kbd">X</span><span class="kbd">C</span>… <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>… <span class="kbd">Q</span><span class="kbd">W</span><span class="kbd">E</span>… rows = white keys',
@@ -406,7 +406,7 @@ const I18N = {
     dmRecHint:(r,ti)=>`Play! ${r} bars left — shaka "6" to stop`,
     dmLoopName:'LOOP',
     dmLoopValPlaying:'▶ PLAYING',
-    dmLoopHintReplace:'3 fingers to re-record · "6" to stop',
+    dmLoopHintReplace:'Stop with "6" first → then "3" to re-record (locked)',
     gShaka:'🤙 Shaka 6 (stop · hold 1s)',
     gFist:'✊ Fist', gFistFade:p=>`✊ Fist (${p}%)`,
     g1:'☝️ 1 (drums on)', g2:'✌️ 2 (drums off)', g3:'🤟 3 (record/overdub)',
@@ -1638,8 +1638,12 @@ function processFingerCount(effective, _handCount){
 function onCountFired(n){
   if(n===1)      setDrumState(true);
   else if(n===2) setDrumState(false);
-  else if(n===3) armRecording();
-  else if(n===6) stopAll();   // 急停 (双手 6 指)
+  else if(n===3){
+    // 只在 loop 完全空闲时允许触发，避免在已有 loop / 正在录 / 倒数中误触
+    if(AE.loop.state === 'idle') armRecording();
+    // else: 忽略 — 用户必须先比 "6" 急停才能重录
+  }
+  else if(n===6) stopAll();
 }
 
 function analyzeGesture(lm){
