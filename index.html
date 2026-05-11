@@ -1543,13 +1543,22 @@ function applyGestureToAudio(){
   if(!AE.ctx) return;
   const t = AE.ctx.currentTime;
 
-  // 加强 FX —— 让指挥手势的效果更明显
-  const targetReverb = clamp(GS.openness,0,1)*1.1;        // 0.7 → 1.1
-  const targetDelay  = clamp(GS.openness-0.15,0,1)*0.85;  // 0.55 → 0.85
+  // Reverb 曲线: openness 是触发开关 (手必须张开), height 决定上限
+  //   height 0 → 0.5 (下半区): 上限从 0% 线性升到 30%
+  //   height 0.5 → 1.0 (上半区): 上限从 30% 线性升到 100%
+  // 只有手抬到屏幕上半区, reverb 才会真的"加大"
+  let reverbCeiling;
+  if(GS.height <= 0.5){
+    reverbCeiling = GS.height * 0.6;                       // 0..0.3
+  } else {
+    reverbCeiling = 0.3 + (GS.height - 0.5) * 1.4;         // 0.3..1.0
+  }
+  const targetReverb = clamp(GS.openness, 0, 1) * reverbCeiling;
+  const targetDelay  = clamp(GS.openness - 0.15, 0, 1) * reverbCeiling * 0.7;
   GS.reverbAmt = lerp(GS.reverbAmt, targetReverb, 0.12);
   AE.reverbWet.gain.setTargetAtTime(GS.reverbAmt, t, 0.05);
   AE.delayWet.gain.setTargetAtTime(GS.reverbAmt>0.1?targetDelay:0, t, 0.05);
-  AE.delayFb.gain.setTargetAtTime(0.40+GS.openness*0.35, t, 0.1);   // 反馈更深
+  AE.delayFb.gain.setTargetAtTime(0.35 + GS.openness*0.25, t, 0.1);
 
   const targetPad = clamp((GS.height-0.15)/0.85, 0, 1);
   GS.padAmt = lerp(GS.padAmt, targetPad, 0.1);
@@ -1590,8 +1599,8 @@ function applyGestureToAudio(){
   refreshViolinFromKeys();
 
   // HUD
-  setMeter('reverbBar', GS.reverbAmt/1.1);
-  document.getElementById('reverbVal').textContent = Math.round(GS.reverbAmt/1.1*100)+'%';
+  setMeter('reverbBar', GS.reverbAmt);
+  document.getElementById('reverbVal').textContent = Math.round(GS.reverbAmt*100)+'%';
   setMeter('padBar', GS.padAmt);
   document.getElementById('padVal').textContent = Math.round(GS.padAmt*100)+'%';
   const fNorm = 1 - clamp((Math.log(GS.filterCutoff)-Math.log(500))/(Math.log(20000)-Math.log(500)),0,1);
