@@ -870,10 +870,11 @@ function padVoice(midi){
   const out=ctx.createGain(); out.gain.value=0;
   const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800; lp.Q.value=0.6;
   out.connect(lp).connect(AE.padBus);
-  const oscs=[]; const detune=[-7,-3,0,3,7];
+  // 3 saw 振荡器 (从 5 减到 3, 减少 CPU 负荷, 听感差异小)
+  const oscs=[]; const detune=[-5,0,5];
   for(const d of detune){
     const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f0*Math.pow(2,d/1200);
-    const g=ctx.createGain(); g.gain.value=0.24;          // 0.18 → 0.24
+    const g=ctx.createGain(); g.gain.value=0.32;
     o.connect(g).connect(out);
     oscs.push(o);
   }
@@ -949,10 +950,10 @@ function violinVoice(midi){
   out.connect(lp).connect(AE.violinBus);
 
   const oscs=[];
-  // 五层 sawtooth ensemble
-  for(const d of [-10, -4, 0, 4, 10]){
+  // 3 层 sawtooth ensemble (从 5 减到 3, 减少 CPU)
+  for(const d of [-7, 0, 7]){
     const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f0*Math.pow(2,d/1200);
-    const g=ctx.createGain(); g.gain.value=0.18;
+    const g=ctx.createGain(); g.gain.value=0.28;
     o.connect(g).connect(out);
     oscs.push(o);
   }
@@ -1478,14 +1479,25 @@ function padIntervalsFor(extended, type){
     default:              return [0,4,7,11,12,19];
   }
 }
+// 缓存 — refresh 函数每帧 60fps 调用, 状态没变就直接 return, 不再重新 set/iterate
+const _padCache    = { active:false, root:null, extended:false, type:null };
+const _celloCache  = { active:false, root:null };
+const _violinCache = { active:false, root:null, type:null };
+
 function refreshPadFromKeys(){
-  const root=chooseRootForPad();
-  if(!root || PAD_TARGET_GAIN<0.02){
-    for(const [m,v] of AE.padVoices) v.stop();
-    AE.padVoices.clear(); _padNotesLive.clear();
+  const root = chooseRootForPad();
+  const active = !!(root && PAD_TARGET_GAIN >= 0.02);
+  if(!active){
+    if(_padCache.active){
+      for(const [m,v] of AE.padVoices) v.stop();
+      AE.padVoices.clear(); _padNotesLive.clear();
+      _padCache.active = false; _padCache.root = null;
+    }
     return;
   }
   const type = chordTypeForRoot(root);
+  // 状态完全一致 → 立刻 return, 不做任何工作
+  if(_padCache.active && _padCache.root === root && _padCache.extended === PAD_EXTENDED && _padCache.type === type) return;
   const wanted=new Set();
   for(const i of padIntervalsFor(PAD_EXTENDED, type)){
     const n=root+i; if(n>=36&&n<=96) wanted.add(n);
@@ -1493,41 +1505,50 @@ function refreshPadFromKeys(){
   for(const n of wanted) if(!AE.padVoices.has(n)) AE.padVoices.set(n, padVoice(n));
   for(const [n,v] of AE.padVoices) if(!wanted.has(n)){ v.stop(); AE.padVoices.delete(n); }
   _padNotesLive=wanted;
+  _padCache.active = true; _padCache.root = root; _padCache.extended = PAD_EXTENDED; _padCache.type = type;
 }
 
 function refreshCelloFromKeys(){
   const root = chooseRootForPad();
-  if(!root || CELLO_TARGET < 0.05){
-    for(const [m,v] of AE.celloVoices) v.stop();
-    AE.celloVoices.clear();
+  const active = !!(root && CELLO_TARGET >= 0.05);
+  if(!active){
+    if(_celloCache.active){
+      for(const [m,v] of AE.celloVoices) v.stop();
+      AE.celloVoices.clear();
+      _celloCache.active = false; _celloCache.root = null;
+    }
     return;
   }
-  // cello 单音, 比 root 低 1 个八度
   const celloRoot = clamp(root - 12, 24, 84);
+  if(_celloCache.active && _celloCache.root === celloRoot) return;
   const wanted = new Set([celloRoot]);
   for(const n of wanted) if(!AE.celloVoices.has(n)) AE.celloVoices.set(n, celloVoice(n));
   for(const [n,v] of AE.celloVoices) if(!wanted.has(n)){ v.stop(); AE.celloVoices.delete(n); }
+  _celloCache.active = true; _celloCache.root = celloRoot;
 }
 
 function refreshViolinFromKeys(){
   const root = chooseRootForPad();
-  if(!root || VIOLIN_TARGET < 0.05){
-    for(const [m,v] of AE.violinVoices) v.stop();
-    AE.violinVoices.clear();
+  const active = !!(root && VIOLIN_TARGET >= 0.05);
+  if(!active){
+    if(_violinCache.active){
+      for(const [m,v] of AE.violinVoices) v.stop();
+      AE.violinVoices.clear();
+      _violinCache.active = false; _violinCache.root = null;
+    }
     return;
   }
-  // 用 chordTypeForRoot 推断当前根音的和弦性质 (大/小/减/属七)，
-  // violin 在 octave 之上叠对应的和弦音，避免大三/小三冲突
   const type = chordTypeForRoot(root);
+  if(_violinCache.active && _violinCache.root === root && _violinCache.type === type) return;
   let intervals;
   switch(type){
     case 'I':
-    case 'IV':  intervals = [12, 16, 19, 24]; break;   // 大三 + 8va
-    case 'V':   intervals = [12, 16, 19, 22]; break;   // 属七 (M3 + P5 + m7) + 8va
+    case 'IV':  intervals = [12, 16, 19, 24]; break;
+    case 'V':   intervals = [12, 16, 19, 22]; break;
     case 'ii':
     case 'iii':
-    case 'vi':  intervals = [12, 15, 19, 24]; break;   // 小三 (m3 + P5) + 8va
-    case 'vii': intervals = [12, 15, 18, 21]; break;   // 减三/m7♭5
+    case 'vi':  intervals = [12, 15, 19, 24]; break;
+    case 'vii': intervals = [12, 15, 18, 21]; break;
     default:    intervals = [12, 16, 19, 24];
   }
   const wanted = new Set();
@@ -1537,6 +1558,7 @@ function refreshViolinFromKeys(){
   }
   for(const n of wanted) if(!AE.violinVoices.has(n)) AE.violinVoices.set(n, violinVoice(n));
   for(const [n,v] of AE.violinVoices) if(!wanted.has(n)){ v.stop(); AE.violinVoices.delete(n); }
+  _violinCache.active = true; _violinCache.root = root; _violinCache.type = type;
 }
 
 function applyGestureToAudio(){
