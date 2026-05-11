@@ -137,6 +137,20 @@
 
   .dm-hint{font-size:11px;color:var(--ink-dim);margin-top:10px;letter-spacing:.5px;min-height:14px}
 
+  /* lyrics panel bottom-left */
+  .hud-lyrics{bottom:12px;left:12px;width:300px;max-height:55vh;display:flex;flex-direction:column;gap:8px;padding:12px 14px;pointer-events:auto}
+  .lyrics-head{display:flex;justify-content:space-between;align-items:center}
+  .lyrics-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim)}
+  .lyrics-fontctl{display:flex;gap:4px}
+  .lyrics-fontctl button{cursor:pointer;background:transparent;border:0;color:var(--ink-dim);font-size:13px;padding:1px 6px;border-radius:4px;font-family:inherit}
+  .lyrics-fontctl button:hover{background:rgba(255,255,255,.1);color:var(--ink)}
+  .lyrics-body{flex:1;overflow-y:auto;min-height:180px;font-size:15px;line-height:1.7;color:var(--ink);outline:none;white-space:pre-wrap;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.05);transition:border-color .15s}
+  .lyrics-body:focus{border-color:rgba(244,114,182,.4)}
+  .lyrics-body:empty::before{content:attr(data-placeholder);color:var(--ink-dim);opacity:.5;pointer-events:none}
+  .lyrics-body::-webkit-scrollbar{width:6px}
+  .lyrics-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+  .lyrics-body::-webkit-scrollbar-track{background:transparent}
+
   /* cheat sheet bottom-right */
   .hud-cheat{bottom:12px;right:12px;font-size:11px;line-height:1.7;color:var(--ink-dim);min-width:240px}
   .hud-cheat h4{margin:0 0 6px 0;font-size:11px;color:var(--ink);letter-spacing:1.5px;text-transform:uppercase}
@@ -272,6 +286,19 @@
       <div class="name" id="gestureName" data-i18n="gestureNone">没看到手</div>
     </div>
 
+    <!-- lyrics panel (bottom-left, user-editable, persists via localStorage) -->
+    <div class="hud hud-lyrics" id="lyricsPanel">
+      <div class="lyrics-head">
+        <span class="lyrics-title" data-i18n="lyricsTitle">歌词</span>
+        <div class="lyrics-fontctl">
+          <button id="lyricsFontDown" title="A-">A−</button>
+          <button id="lyricsFontUp" title="A+">A+</button>
+          <button id="lyricsClear" title="清空" data-i18n="lyricsClear">清空</button>
+        </div>
+      </div>
+      <div class="lyrics-body" id="lyricsBody" contenteditable="true" spellcheck="false" data-i18n-placeholder="lyricsPlaceholder" data-placeholder="点这里粘贴歌词..."></div>
+    </div>
+
     <!-- cheat sheet -->
     <div class="hud hud-cheat">
       <h4 data-i18n="cheatTitle">手势 Cheat Sheet</h4>
@@ -316,6 +343,9 @@ const I18N = {
     voiceLabel: '音色', countinLabel: '预备',
     autoHarmony: '🎼 自动配和弦',
     ledViz: '🎹 LED 指示',
+    lyricsTitle: '歌词',
+    lyricsPlaceholder: '点这里把歌词粘进来，自动保存',
+    lyricsClear: '清空',
     bar1:'1 小节', bar2:'2 小节', bar4:'4 小节',
     bar4b:'4 小节', bar8b:'8 小节',
     midiChecking:'检测 MIDI…', camIdle:'摄像头未启动', camOn:'摄像头已启动', camFailed:'摄像头启动失败',
@@ -369,6 +399,9 @@ const I18N = {
     voiceLabel: 'Voice', countinLabel: 'Pre-roll',
     autoHarmony: '🎼 Auto-Harmony',
     ledViz: '🎹 LED Cues',
+    lyricsTitle: 'Lyrics',
+    lyricsPlaceholder: 'Click here and paste your lyrics — auto-saved',
+    lyricsClear: 'Clear',
     bar1:'1 bar', bar2:'2 bars', bar4:'4 bars',
     bar4b:'4 bars', bar8b:'8 bars',
     midiChecking:'Checking MIDI…', camIdle:'Camera off', camOn:'Camera on', camFailed:'Camera failed',
@@ -426,6 +459,11 @@ function applyStaticI18n(){
   document.querySelectorAll('[data-i18n]').forEach(el=>{
     const k = el.getAttribute('data-i18n');
     el.innerHTML = t(k);
+  });
+  // 处理 placeholder (用于 contenteditable 的 :empty::before)
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    const k = el.getAttribute('data-i18n-placeholder');
+    el.setAttribute('data-placeholder', t(k));
   });
   document.documentElement.lang = LANG;
 }
@@ -1965,6 +2003,43 @@ ledBtn.addEventListener('click', ()=>{
     _ledState.clear();
   }
 });
+
+/* ============================================================
+   Lyrics panel — 用户自己粘贴歌词, localStorage 持久化
+   ============================================================ */
+(function setupLyrics(){
+  const body = document.getElementById('lyricsBody');
+  const fontUp = document.getElementById('lyricsFontUp');
+  const fontDown = document.getElementById('lyricsFontDown');
+  const clearBtn = document.getElementById('lyricsClear');
+  const LS_TEXT = 'cameraband_lyrics_text';
+  const LS_SIZE = 'cameraband_lyrics_fontsize';
+  // 恢复上次的歌词和字号
+  try{
+    const saved = localStorage.getItem(LS_TEXT);
+    if(saved) body.textContent = saved;
+    const sz = parseInt(localStorage.getItem(LS_SIZE) || '15', 10);
+    body.style.fontSize = clamp(sz, 11, 28) + 'px';
+  }catch(e){}
+  // 输入即保存
+  body.addEventListener('input', ()=>{
+    try{ localStorage.setItem(LS_TEXT, body.textContent || ''); }catch(e){}
+  });
+  // 字号调节
+  function bumpFont(delta){
+    const cur = parseInt(getComputedStyle(body).fontSize, 10) || 15;
+    const next = clamp(cur + delta, 11, 28);
+    body.style.fontSize = next + 'px';
+    try{ localStorage.setItem(LS_SIZE, String(next)); }catch(e){}
+  }
+  fontUp.addEventListener('click', ()=> bumpFont(2));
+  fontDown.addEventListener('click', ()=> bumpFont(-2));
+  // 清空
+  clearBtn.addEventListener('click', ()=>{
+    body.textContent = '';
+    try{ localStorage.removeItem(LS_TEXT); }catch(e){}
+  });
+})();
 document.getElementById('countinSelect').addEventListener('change', (e)=>{
   COUNTIN_BARS = parseInt(e.target.value, 10) || 2;
 });
