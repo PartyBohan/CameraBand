@@ -659,40 +659,71 @@ function epianoVoice(midi, vel=0.8, when=null){
   return wrapStop(ctx, out, [car,mod,body], 0.4);
 }
 
-/* ---------- 原声吉他 (sharp pluck + 暖 body decay) ---------- */
+/* ---------- 原声吉他 — 5 振荡器 + 拨弦瞬态噪声, 厚而温暖 ---------- */
 function guitarVoice(midi, vel=0.8, when=null){
   if(!AE.ctx) return null;
   const ctx=AE.ctx, t0 = when ?? ctx.currentTime;
   const f0=midiToFreq(midi);
   const v=clamp(vel,0.15,1);
-  const out=ctx.createGain(); out.gain.value=1; out.connect(AE.drySend);
+  const out=ctx.createGain(); out.gain.value=0.85; out.connect(AE.drySend);
 
-  // sawtooth 基音 + 二次谐波 triangle 给"body resonance"
-  const o1 = ctx.createOscillator(); o1.type='sawtooth'; o1.frequency.value=f0;
-  const o2 = ctx.createOscillator(); o2.type='triangle'; o2.frequency.value=f0*2;
+  // 5 层音色:
+  //   o1     主体 sawtooth (琴弦本音)
+  //   o1b    +6 cents detune 第二把"琴弦", 形成 chorus 双弦感
+  //   oSub   低八度 triangle, 加暖意和饱满度
+  //   o2     2 次谐波 triangle, body 共鸣
+  //   o3     3 次谐波 sine, 微微的亮度
+  const o1  = ctx.createOscillator(); o1.type='sawtooth';  o1.frequency.value=f0;
+  const o1b = ctx.createOscillator(); o1b.type='sawtooth'; o1b.frequency.value=f0*Math.pow(2,6/1200);
+  const oSub= ctx.createOscillator(); oSub.type='triangle'; oSub.frequency.value=f0/2;
+  const o2  = ctx.createOscillator(); o2.type='triangle'; o2.frequency.value=f0*2;
+  const o3  = ctx.createOscillator(); o3.type='sine';     o3.frequency.value=f0*3;
 
-  // 拨弦 brightness 衰减 — 起始 10×f0, 0.4s 内收到 2.5×f0, 模仿"亮 → 暖"
-  const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=2;
-  lp.frequency.setValueAtTime(f0*10, t0);
-  lp.frequency.exponentialRampToValueAtTime(Math.max(500, f0*2.5), t0+0.4);
+  // 拨弦 brightness envelope: 起始 12×f0 → 0.5s 收到 2.8×f0 ("亮 → 暖")
+  const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=2.2;
+  lp.frequency.setValueAtTime(f0*12, t0);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(600, f0*2.8), t0+0.5);
 
-  const g1 = ctx.createGain(); g1.gain.value=0;
-  const g2 = ctx.createGain(); g2.gain.value=0;
-  // 极快攻击 + 中等衰减
-  g1.gain.setValueAtTime(0, t0);
-  g1.gain.linearRampToValueAtTime(0.6*v, t0+0.003);
-  g1.gain.exponentialRampToValueAtTime(0.0001, t0+1.8);
-  g2.gain.setValueAtTime(0, t0);
-  g2.gain.linearRampToValueAtTime(0.18*v, t0+0.005);
-  g2.gain.exponentialRampToValueAtTime(0.0001, t0+1.3);
+  function env(g, peak, decay){
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(peak*v, t0+0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+decay);
+  }
+  const g1 = ctx.createGain();  env(g1,  0.55, 2.0);
+  const g1b= ctx.createGain();  env(g1b, 0.32, 2.0);
+  const gSub=ctx.createGain();  env(gSub,0.28, 1.8);
+  const g2 = ctx.createGain();  env(g2,  0.20, 1.4);
+  const g3 = ctx.createGain();  env(g3,  0.10, 1.0);
 
+  // 拨弦瞬态噪声 — 模拟 pick 打到琴弦的咔嗒, 50ms 内消失, 不进低通保留尖锐感
+  const noiseBuf = ctx.createBuffer(1, 0.04*ctx.sampleRate, ctx.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for(let i=0;i<nd.length;i++) nd[i] = Math.random()*2-1;
+  const noise = ctx.createBufferSource(); noise.buffer = noiseBuf;
+  const noiseHp = ctx.createBiquadFilter(); noiseHp.type='highpass'; noiseHp.frequency.value=1500;
+  const noiseG = ctx.createGain();
+  noiseG.gain.setValueAtTime(0.0001, t0);
+  noiseG.gain.linearRampToValueAtTime(0.28*v, t0+0.002);
+  noiseG.gain.exponentialRampToValueAtTime(0.0001, t0+0.06);
+
+  // Routing — 振荡器走 lowpass, 噪声直通保留 attack 咔嗒
   o1.connect(g1).connect(lp);
+  o1b.connect(g1b).connect(lp);
+  oSub.connect(gSub).connect(lp);
   o2.connect(g2).connect(lp);
+  o3.connect(g3).connect(lp);
+  noise.connect(noiseHp).connect(noiseG).connect(out);
   lp.connect(out);
-  o1.start(t0); o1.stop(t0+2.5);
-  o2.start(t0); o2.stop(t0+2);
 
-  return wrapStop(ctx, out, [o1,o2], 0.3);
+  o1.start(t0);   o1.stop(t0+2.5);
+  o1b.start(t0);  o1b.stop(t0+2.5);
+  oSub.start(t0); oSub.stop(t0+2.5);
+  o2.start(t0);   o2.stop(t0+2);
+  o3.start(t0);   o3.stop(t0+1.5);
+  noise.start(t0); noise.stop(t0+0.1);
+  noise.onended = ()=>{ try{noise.disconnect();noiseHp.disconnect();noiseG.disconnect();}catch(e){} };
+
+  return wrapStop(ctx, out, [o1,o1b,oSub,o2,o3], 0.4);
 }
 
 /* ---------- 电吉他 (自带延音 — 长 sustain + slow tail + 颤音 + 微 chorus) ---------- */
@@ -712,13 +743,6 @@ function elecGuitarVoice(midi, vel=0.8, when=null){
   const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=4;
   lp.frequency.setValueAtTime(f0*8, t0);
   lp.frequency.exponentialRampToValueAtTime(Math.max(800, f0*3), t0+0.3);
-
-  // Vibrato — 持续音的"歌唱"特征 (5.5Hz, ±4 cents)
-  const vib = ctx.createOscillator(); vib.frequency.value=5.5;
-  const vibG = ctx.createGain(); vibG.gain.value=4;
-  vib.connect(vibG);
-  vibG.connect(o1.frequency);
-  vibG.connect(o3.frequency);
 
   // 每层振荡器的混音电平 (静态)
   const g1 = ctx.createGain(); g1.gain.value=0.45*v;
@@ -741,20 +765,19 @@ function elecGuitarVoice(midi, vel=0.8, when=null){
   o1.start(t0); o1.stop(t0+9);
   o2.start(t0); o2.stop(t0+9);
   o3.start(t0); o3.stop(t0+9);
-  vib.start(t0); vib.stop(t0+9);
 
   // 自定义 stop: note off 时也给 1.5s 释放尾 (而不是骤停, 维持电吉他"鸣响"感)
   return {
-    out, oscs:[o1,o2,o3,vib],
+    out, oscs:[o1,o2,o3],
     stop(){
       const t = ctx.currentTime;
       out.gain.cancelScheduledValues(t);
       out.gain.setValueAtTime(out.gain.value || 0.0001, t);
       out.gain.exponentialRampToValueAtTime(0.0001, t+1.5);
-      for(const o of [o1,o2,o3,vib]){ try{ o.stop(t+1.6); }catch(e){} }
+      for(const o of [o1,o2,o3]){ try{ o.stop(t+1.6); }catch(e){} }
       setTimeout(()=>{
         try{ out.disconnect(); }catch(e){}
-        for(const o of [o1,o2,o3,vib,lp]){ try{ o.disconnect(); }catch(e){} }
+        for(const o of [o1,o2,o3,lp]){ try{ o.disconnect(); }catch(e){} }
       }, 1700);
     }
   };
