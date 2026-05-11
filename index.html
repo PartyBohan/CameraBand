@@ -1014,9 +1014,11 @@ function scheduleLoopNotes(now){
   const nextCycleStart = cycleStart + cycleDur;
 
   for(let ti=0; ti<L.tracks.length; ti++){
-    if(ti === L.recordingTrackIdx) continue;   // skip the track being recorded
+    if(ti === L.recordingTrackIdx) continue;
     const track = L.tracks[ti];
     if(!track.notes.length) continue;
+    // 用录制时的音色, 不跟随顶部下拉
+    const voiceFn = VOICES[track.voice || CURRENT_VOICE];
     const scale = barDuration() / (track.recordBarDur || barDuration());
     track.notes.forEach((n, ni)=>{
       const fireAt = cycleStart + n.t * scale;
@@ -1024,7 +1026,7 @@ function scheduleLoopNotes(now){
       const key = ti+':'+ni+':'+L.cycle;
       if(fireAt >= now-0.05 && fireAt < now+SCHED_AHEAD && !L.scheduled.has(key)){
         L.scheduled.add(key);
-        const v = makeVoice(n.midi, n.vel*0.85, fireAt);
+        const v = voiceFn(n.midi, n.vel*0.85, fireAt);
         if(v) L.liveVoices.add(v);
         setTimeout(()=>{ if(v){ v.stop(); L.liveVoices.delete(v); } }, Math.max(50,(fireAt-now+dur)*1000));
         const colorByTrack = ti===0 ? 'blue' : 'purple';
@@ -1034,7 +1036,6 @@ function scheduleLoopNotes(now){
         }, Math.max(0,(fireAt-now)*1000));
       }
     });
-    // pre-schedule next cycle if close
     if(nextCycleStart < now + SCHED_AHEAD){
       track.notes.forEach((n,ni)=>{
         const fireAt = nextCycleStart + n.t * scale;
@@ -1042,7 +1043,7 @@ function scheduleLoopNotes(now){
         const key = ti+':'+ni+':'+(L.cycle+1);
         if(fireAt < now+SCHED_AHEAD && !L.scheduled.has(key)){
           L.scheduled.add(key);
-          const v = makeVoice(n.midi, n.vel*0.85, fireAt);
+          const v = voiceFn(n.midi, n.vel*0.85, fireAt);
           if(v) L.liveVoices.add(v);
           setTimeout(()=>{ if(v){ v.stop(); L.liveVoices.delete(v); } }, Math.max(50,(fireAt-now+dur)*1000));
         }
@@ -1066,7 +1067,8 @@ function armRecording(){
   L.liveVoices.clear();
   for(const m of L.liveLeds){ unflashLoopKey(m); sendLedSysEx(m,'off'); }
   L.liveLeds.clear();
-  L.tracks = [{ notes:[], recordBarDur: barDuration() }];
+  // 把当前音色"烧"进 track, 之后改顶部下拉不会影响这条 loop 的回放
+  L.tracks = [{ notes:[], recordBarDur: barDuration(), voice: CURRENT_VOICE }];
   L.recordingTrackIdx = 0;
   L.activeOn.clear();
   L.scheduled.clear();
