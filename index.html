@@ -51,8 +51,8 @@
   .ah-btn:hover{color:var(--ink)}
   .ah-btn.on{background:linear-gradient(135deg,rgba(52,211,153,.4),rgba(56,189,248,.4));border-color:rgba(52,211,153,.55);color:var(--ink);box-shadow:0 0 12px rgba(52,211,153,.3)}
 
-  /* voice cards — 右侧 2x2 卡牌 */
-  .voice-cards{position:absolute;top:50%;right:12px;transform:translateY(-50%);display:grid;grid-template-columns:repeat(2,96px);gap:10px;z-index:6;pointer-events:auto}
+  /* voice cards — 右侧 2x2 卡牌, 位于 gesture HUD 下方, cheat sheet 上方的留白处 */
+  .voice-cards{position:absolute;top:160px;right:12px;display:grid;grid-template-columns:repeat(2,96px);gap:10px;z-index:6;pointer-events:auto}
   .voice-card{padding:11px 6px 9px;background:rgba(15,16,41,.55);border:1px solid rgba(255,255,255,.12);border-radius:14px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);cursor:pointer;color:var(--ink-dim);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .18s ease}
   .voice-card:hover{transform:translateY(-2px);color:var(--ink);border-color:rgba(255,255,255,.25)}
   .vc-icon{font-size:28px;line-height:1;filter:saturate(.85)}
@@ -2145,7 +2145,7 @@ ledBtn.addEventListener('click', ()=>{
   try{
     const saved = localStorage.getItem(LS_TEXT);
     if(saved) body.textContent = saved;
-    const sz = parseInt(localStorage.getItem(LS_SIZE) || '15', 10);
+    const sz = parseInt(localStorage.getItem(LS_SIZE) || '12', 10);
     body.style.fontSize = clamp(sz, 11, 28) + 'px';
   }catch(e){}
   // 输入即保存
