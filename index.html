@@ -1778,12 +1778,18 @@ function analyzeGesture(lm){
   const wrist=lm[0], middleMcp=lm[9];
   const handSize = dist3(wrist, middleMcp) || 0.0001;
   const tips=[8,12,16,20], mcps=[5,9,13,17];
+  // 指标 A: tip → MCP 距离 (手转到侧面时会偏弱)
   let openSum=0;
   for(let i=0;i<tips.length;i++) openSum += dist3(lm[tips[i]], lm[mcps[i]]) / handSize;
   const openRaw = openSum/tips.length;
-  const opennessNorm = clamp((openRaw-0.7)/(1.7-0.7),0,1);
+  const opennessNorm = clamp((openRaw-0.55)/(1.4-0.55),0,1);   // 阈值放宽一点
+  // 指标 B: 相邻指尖间距 (对手部旋转更鲁棒, 手转到侧面也能识别张开)
+  const tipSpread = (dist3(lm[8],lm[12]) + dist3(lm[12],lm[16]) + dist3(lm[16],lm[20])) / 3 / handSize;
+  const spreadNorm = clamp((tipSpread - 0.15) / 0.25, 0, 1);
+  // 拇指伸展
   const thumbExt = clamp((dist3(lm[4], lm[5])/handSize - 0.6)/0.8, 0, 1);
-  const opennessFinal = clamp(opennessNorm*0.8 + thumbExt*0.2, 0, 1);
+  // 组合 — 取两种张开指标的最大值, 任一个能识别就算手张开 → 即使手位置偏到 cello/violin 区也能触发 reverb
+  const opennessFinal = clamp(Math.max(opennessNorm, spreadNorm)*0.85 + thumbExt*0.15, 0, 1);
   GS.openness = lerp(GS.openness, opennessFinal, 0.18);
 
   const heightRaw = 1 - clamp(wrist.y, 0, 1);
@@ -1821,9 +1827,15 @@ function analyzeGesture(lm){
     name = heightRaw > 0.65 ? t('g5Raise') : t('g5Open');
     big='🖐️';
   }
+  // 横向位置 cello/violin 不覆盖 open hand, 改成"追加"显示, 让 reverb + 弦乐能同时看到激活
   if(!shaka && effective === -1){
-    if(GS.celloAmt > 0.25){ name = t('gCello', Math.round(GS.celloAmt*100)); big='🎻'; }
-    else if(GS.violinAmt > 0.25){ name = t('gViolin', Math.round(GS.violinAmt*100)); big='🎻'; }
+    const extras = [];
+    if(GS.celloAmt > 0.25)  extras.push('➡️ '+Math.round(GS.celloAmt*100)+'%');
+    if(GS.violinAmt > 0.25) extras.push('⬅️ '+Math.round(GS.violinAmt*100)+'%');
+    if(extras.length){
+      name = (name ? name + ' + ' : '') + extras.join(' ');
+      if(big === '—') big='🎻';
+    }
   }
   gNameEl.textContent=name; gBigEl.textContent=big;
 }
