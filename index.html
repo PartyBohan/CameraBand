@@ -1825,39 +1825,77 @@ function sendLedSysEx(midi,color){
 }
 
 /* ============================================================
-   LED VISUALIZATION (gesture-driven, 全键 LED 当乐队总谱)
+   LED VISUALIZATION — 流光溢彩
+   策略: 预烘焙一组彩虹漂移帧, 实时只做查表 + 少量叠加 + diff 发送,
+        避免每帧都从手势算一遍, 视觉上更丝滑流畅
    ============================================================ */
-const _ledState = new Map();   // midi → 当前色号
+const _ledState = new Map();
+
+// 12 个 PartyKeys 颜色排成一道彩虹光谱 (按色相递进):
+// red → red-orange → orange → dark-orange → amber → yellow-green
+//   → green → cyan → blue → dark-blue → indigo → purple → (wrap)
+// 索引 0..11 → 色号 1..12
+
+// 预烘焙: 60 帧 (~3 秒一个完整漂移循环) × 36 颗灯
+const _LED_FRAMES = 60;
+const _LED_KEYS = 36;
+const _ledRainbow = new Array(_LED_FRAMES);
+(function precomputeRainbow(){
+  for(let f=0; f<_LED_FRAMES; f++){
+    const frame = new Map();
+    for(let i=0; i<_LED_KEYS; i++){
+      const midi = 48 + i;
+      // 每 4 颗灯 走 1 个色, 整条键盘横跨 9 个色; 每过 4 帧整体右移 1 色 → 彩虹缓缓流动
+      const phase = (i / 4) + (f / 4);
+      const color = (((Math.floor(phase) % 12) + 12) % 12) + 1;   // 1..12
+      frame.set(midi, color);
+    }
+    _ledRainbow[f] = frame;
+  }
+})();
+
+let _ledFrameIdx = 0;
+let _ledLastTickMs = 0;
+const _LED_FPS = 20;
+const _LED_TICK_MS = 1000 / _LED_FPS;
+
 function updateLedVisualization(){
   if(!LED_VISUALIZE || !MIDI_OUT) return;
-  const desired = new Map();
+  const now = performance.now();
+  if(now - _ledLastTickMs < _LED_TICK_MS) return;   // 节流到 20fps, SysEx 带宽友好
+  _ledLastTickMs = now;
+  _ledFrameIdx = (_ledFrameIdx + 1) % _LED_FRAMES;
 
-  // Layer 1: 手势分区亮度 (Feature C)
-  // C3-B3 (48-59) = cello 区
+  // 层 1: 预烘焙彩虹底色 (直接查表, 0 计算)
+  const desired = new Map(_ledRainbow[_ledFrameIdx]);
+
+  // 层 2: 手势分区 (轻微染色, 不彻底盖住彩虹, 保留流动感)
+  // celloAmt 强烈时 给低音区每隔一颗染深橙, 形成横向波纹
   if(GS.celloAmt > 0.35){
-    for(let m=48; m<=59; m++) desired.set(m, 0x04);   // dark orange
+    const phase = _ledFrameIdx % 4;
+    for(let m=48; m<=59; m++) if((m + phase) % 3 === 0) desired.set(m, 0x03);  // 亮橙点缀
   }
-  // C4-B4 (60-71) = pad 区
-  if(GS.padAmt > 0.35){
-    for(let m=60; m<=71; m++) desired.set(m, 0x0A);   // dark blue
-  }
-  // C5-B5 (72-83) = violin 区
   if(GS.violinAmt > 0.35){
-    for(let m=72; m<=83; m++) desired.set(m, 0x0B);   // indigo
+    const phase = _ledFrameIdx % 4;
+    for(let m=72; m<=83; m++) if((m + phase) % 3 === 0) desired.set(m, 0x0C);  // 紫色点缀
+  }
+  if(GS.padAmt > 0.35){
+    const phase = _ledFrameIdx % 4;
+    for(let m=60; m<=71; m++) if((m + phase) % 3 === 0) desired.set(m, 0x08);  // cyan 点缀
   }
 
-  // Layer 2: 正在响的乐队声部具体音 (Feature A) — 覆盖区域亮度
+  // 层 3: 正在响的乐队声部具体音 (覆盖, 亮色)
   for(const m of AE.celloVoices.keys())  desired.set(m, 0x03);   // bright orange
   for(const m of AE.padVoices.keys())    desired.set(m, 0x08);   // cyan
   for(const m of AE.violinVoices.keys()) desired.set(m, 0x0C);   // purple
 
-  // Layer 3: loop 回放音
-  for(const m of AE.loop.liveLeds) desired.set(m, 0x09);  // blue
+  // 层 4: loop 回放音
+  for(const m of AE.loop.liveLeds) desired.set(m, 0x09);
 
-  // Layer 4: 用户当前按下的音 (最高优先)
-  for(const m of AE.voices.keys()) desired.set(m, 0x07);  // green
+  // 层 5: 用户当前按下的音 (最亮, 最高优先级)
+  for(const m of AE.voices.keys()) desired.set(m, 0x06);   // 亮 yellow-green ≈ 白
 
-  // diff: 只发改变的灯, 减少 SysEx 带宽
+  // diff 后批量发送
   const changes = [];
   for(const [m,c] of desired){
     if(_ledState.get(m) !== c){
